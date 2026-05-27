@@ -1,0 +1,508 @@
+/* ═══════════════════════════════════════════════════════
+   RoopVibe — Mobile Responsive Styles
+   Add this file: import './mobile.css' in App.jsx/main.jsx
+   ═══════════════════════════════════════════════════════ */
+
+/* ── GLOBAL ── */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+
+/* ═══════════════════════════════════════════════════
+   NAVBAR
+   ═══════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  header > div {
+    padding: 0 12px !important;
+    height: 56px !important;
+    gap: 0 !important;
+  }
+
+  /* Logo smaller */
+  header img[alt="RoopVibe Logo"] {
+    height: 38px !important;
+    margin-right: 0 !important;
+  }
+
+  /* Hide desktop nav links on mobile */
+  header nav {
+    display: none !important;
+  }
+
+  /* Icons row compact */
+  header > div > div:last-child {
+    gap: 14px !important;
+  }
+
+  /* Search bar full width */
+  header form {
+    margin: 0 8px !important;
+    height: 38px !important;
+  }
+
+  /* Mega menu hidden on mobile */
+  header > div > div[style*="position: absolute"] {
+    display: none !important;
+  }
+
+  /* Profile dropdown */
+  header div[style*="width: 260px"] {
+    width: 220px !important;
+    right: -4px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   CATEGORY BAR (Gender tabs + Category icons)
+   ═══════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Gender tab row */
+  .rv-tab-btn {
+    padding: 9px 12px !important;
+    font-size: 11px !important;
+    letter-spacing: 0.3px !important;
+  }
+
+  /* Category icon scroll row */
+  div[style*="overflowX: auto"] {
+    padding: 10px 12px 8px !important;
+    gap: 0 !important;
+  }
+
+  /* Each arch category item */
+  .rv-cat-btn {
+    min-width: 68px !important;
+    padding: 0 2px !important;
+  }
+
+  .rv-cat-btn > div:first-child {
+    width: 60px !important;
+    height: 72px !important;
+    border-radius: 30px 30px 6px 6px !important;
+  }
+
+  .rv-cat-btn span {
+    font-size: 8.5px !important;
+    margin-top: 5px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   HERO BANNER
+   ═══════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Banner wrapper */
+  div[style*="padding: 14px 0 10px"] > div {
+    width: 94% !important;
+    max-width: 100% !important;
+  }
+
+  /* Banner slide container */
+  div[style*="height: 260px"] {
+    height: 180px !important;
+    border-radius: 10px !important;
+  }
+
+  /* Text left side */
+  div[style*="width: 55%"][style*="padding: 28px"] {
+    width: 60% !important;
+    padding: 14px 10px 14px 14px !important;
+  }
+
+  /* Banner tag pill */
+  div[style*="padding: 3px 12px"][style*="borderRadius: 20px"] {
+    padding: 2px 8px !important;
+    margin-bottom: 6px !important;
+  }
+
+  div[style*="padding: 3px 12px"] span:last-child {
+    font-size: 8px !important;
+    letter-spacing: 1px !important;
+  }
+
+  /* Banner heading */
+  div[style*="width: 55%"] h2 {
+    font-size: 18px !important;
+    margin-bottom: 6px !important;
+  }
+
+  /* Banner subtitle */
+  div[style*="width: 55%"] p {
+    font-size: 9px !important;
+  }
+
+  /* CTA button */
+  .rv-cta-btn {
+    padding: 6px 12px !important;
+    font-size: 8px !important;
+    letter-spacing: 0.5px !important;
+  }
+
+  /* Image right side */
+  div[style*="width: 42%"] {
+    width: 38% !important;
+  }
+
+  /* Nav arrows */
+  button[style*="width: 30px"][style*="height: 30px"] {
+    width: 24px !important;
+    height: 24px !important;
+    font-size: 16px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   PRODUCT GRID (HomePage — AllProductsSection)
+   ═══════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Section padding */
+  section[style*="padding: 36px 40px 48px"] {
+    padding: 20px 12px 32px !important;
+  }
+
+  /* 4-col → 2-col grid */
+  section div[style*="gridTemplateColumns: repeat(4, 1fr)"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  /* Product card image layout */
+  .rv-prod-card a > div:first-child {
+    height: 160px !important;
+  }
+
+  /* Small image column */
+  .rv-prod-card a > div:last-child > div {
+    height: 78px !important;
+  }
+
+  /* Card action row */
+  .rv-prod-card > div:last-child {
+    padding: 8px !important;
+  }
+
+  .rv-prod-card > div:last-child p:first-child {
+    font-size: 9px !important;
+  }
+
+  .rv-prod-card > div:last-child span:first-child {
+    font-size: 12px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   PRODUCT DETAIL PAGE
+   ═══════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Main grid: 2-col → 1-col stacked */
+  div[style*="gridTemplateColumns: 1fr 1fr"][style*="gap: 40"] {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+
+  /* Breadcrumb */
+  div[style*="padding: 10px 40px"] {
+    padding: 8px 12px !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+  }
+
+  /* Main content padding */
+  div[style*="maxWidth: 1280"][style*="padding: 28px 40px"] {
+    padding: 16px 12px !important;
+  }
+
+  /* Image gallery: sticky off on mobile */
+  div[style*="position: sticky"][style*="top: 80"] {
+    position: relative !important;
+    top: auto !important;
+  }
+
+  /* Main product image */
+  img[style*="height: 520"] {
+    height: 340px !important;
+    object-fit: cover !important;
+  }
+
+  /* Thumbnails */
+  div[style*="display: flex"][style*="marginTop: 12"] > div[style*="width: 72px"] {
+    width: 56px !important;
+    height: 70px !important;
+  }
+
+  /* Price box */
+  div[style*="padding: 14px 16px"][style*="borderRadius: 8"] {
+    padding: 10px 12px !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  div[style*="padding: 14px 16px"] span:first-child {
+    font-size: 22px !important;
+  }
+
+  /* CTA buttons side by side on mobile */
+  div[style*="display: flex"][style*="gap: 12"][style*="marginBottom: 24"] {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  /* Trust badges 2-col on mobile */
+  div[style*="gridTemplateColumns: 1fr 1fr"][style*="padding: 16"] {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+    padding: 12px !important;
+  }
+
+  /* Related products: 4-col → 2-col */
+  div[style*="gridTemplateColumns: repeat(4, 1fr)"][style*="gap: 24"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  div[style*="marginTop: 60"] {
+    margin-top: 32px !important;
+    padding-top: 24px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   CART PAGE
+   ═══════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Cart main wrapper */
+  div[style*="maxWidth: 1000px"][style*="margin: 40px auto"] {
+    margin: 16px auto !important;
+    padding: 0 12px !important;
+  }
+
+  div[style*="maxWidth: 1000px"] h1 {
+    font-size: 20px !important;
+    margin-bottom: 16px !important;
+  }
+
+  /* 2-col → 1-col */
+  div[style*="gridTemplateColumns: 1fr 340px"] {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+
+  /* Summary sticky off */
+  div[style*="position: sticky"][style*="top: 100px"] {
+    position: relative !important;
+    top: auto !important;
+  }
+
+  /* Cart item layout */
+  div[style*="display: flex"][style*="gap: 20px"][style*="padding: 20px"] {
+    gap: 12px !important;
+    padding: 12px !important;
+  }
+
+  div[style*="display: flex"][style*="gap: 20px"] img {
+    width: 80px !important;
+    height: 100px !important;
+  }
+
+  div[style*="display: flex"][style*="gap: 20px"] h3 {
+    font-size: 13px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   CHECKOUT / ADDRESS PAGE
+   ═══════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Step bar */
+  header + div[style*="backgroundColor: #fff"] {
+    padding: 0 12px !important;
+  }
+
+  div[style*="maxWidth: 1100px"][style*="height: 60px"] {
+    height: auto !important;
+    padding: 10px 0 !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  /* Hide logo in step bar on mobile */
+  div[style*="marginRight: 48px"] {
+    display: none !important;
+  }
+
+  /* Steps smaller text */
+  div[style*="width: 24px"][style*="height: 24px"] {
+    width: 20px !important;
+    height: 20px !important;
+    font-size: 10px !important;
+  }
+
+  div[style*="fontSize: 13px"][style*="fontWeight"] {
+    font-size: 11px !important;
+  }
+
+  /* 2-col checkout → 1-col */
+  div[style*="gridTemplateColumns: 1.7fr 1fr"] {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  /* Right col summary: not sticky on mobile */
+  div[style*="position: sticky"][style*="top: 88px"] {
+    position: relative !important;
+    top: auto !important;
+  }
+
+  /* Address form grid */
+  div[style*="gridTemplateColumns: 1fr 1fr"][style*="gap: 18"] {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  div[style*="gridColumn: span 2"] {
+    grid-column: span 1 !important;
+  }
+
+  /* Checkout container */
+  div[style*="backgroundColor: #F4F1EB"][style*="padding: 28px 20px"] {
+    padding: 16px 12px !important;
+  }
+
+  /* Payment panel: vertical stack */
+  div[style*="display: flex"][style*="minHeight: 360px"] {
+    flex-direction: column !important;
+    min-height: auto !important;
+  }
+
+  div[style*="width: 220px"][style*="borderRight"] {
+    width: 100% !important;
+    border-right: none !important;
+    border-bottom: 1px solid #E8E0D5 !important;
+    display: flex !important;
+    overflow-x: auto !important;
+    flex-direction: row !important;
+  }
+
+  div[style*="width: 220px"] > div {
+    flex-shrink: 0 !important;
+    min-width: 100px !important;
+    border-bottom: none !important;
+    padding: 12px 10px !important;
+  }
+
+  /* EMI grid */
+  div[style*="gridTemplateColumns: 1fr 1fr"][style*="gap: 12"] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   SEARCH PAGE
+   ═══════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  div[style*="maxWidth: 1200px"][style*="padding: 40px 24px"] {
+    padding: 20px 12px !important;
+  }
+
+  div[style*="maxWidth: 1200px"] h1 {
+    font-size: 18px !important;
+  }
+
+  /* 4-col → 2-col */
+  .grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  div.grid[class*="grid-cols-4"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  /* Override tailwind grid */
+  div[class*="grid"][class*="grid-cols-4"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   SECTION HEADINGS
+   ═══════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* SectionHeading component */
+  div[style*="marginBottom: 28px"] h2 {
+    font-size: 17px !important;
+  }
+
+  div[style*="marginBottom: 28px"] p {
+    font-size: 12px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   UTILITY — tap targets & scroll
+   ═══════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Ensure all clickable items have minimum 44px touch target */
+  button, a {
+    min-height: 36px;
+  }
+
+  /* Prevent horizontal overflow on body */
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Smooth horizontal scrolls for category rows */
+  div[style*="scrollbarWidth: none"] {
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+
+  div[style*="scrollbarWidth: none"]::-webkit-scrollbar {
+    display: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   SMALL PHONES (≤ 380px)
+   ═══════════════════════════════════════════════════ */
+@media (max-width: 380px) {
+  .rv-cat-btn {
+    min-width: 58px !important;
+  }
+
+  .rv-cat-btn > div:first-child {
+    width: 52px !important;
+    height: 64px !important;
+  }
+
+  section div[style*="gridTemplateColumns: repeat(2, 1fr)"] {
+    gap: 8px !important;
+  }
+
+  div[style*="height: 180px"] {
+    height: 160px !important;
+  }
+
+  div[style*="width: 55%"] h2 {
+    font-size: 15px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   BOTTOM NAV — show on mobile, hide on desktop
+   ═══════════════════════════════════════════════════ */
+.rv-mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .rv-mobile-bottom-nav {
+    display: flex !important;
+  }
+
+  /* Push content up so it doesn't hide behind bottom nav */
+  main {
+    padding-bottom: 60px;
+  }
+}
