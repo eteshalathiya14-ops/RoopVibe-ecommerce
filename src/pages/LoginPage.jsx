@@ -52,7 +52,8 @@ export default function LoginPage() {
 
   const inputStyle = (name) => ({
     width: '100%',
-    padding: '13px 13px 13px 42px',
+    height: '44px',
+    padding: '13px 13px 13px 44px',
     borderRadius: '10px',
     border: `1.5px solid ${focusedInput === name ? GOLD : '#E8E0D5'}`,
     outline: 'none',
@@ -95,7 +96,7 @@ export default function LoginPage() {
       }}>
 
         {/* ── Left Panel — Brand/Perks ── */}
-        <div style={{
+        <div className="rv-login-left" style={{
           width: '42%',
           background: `linear-gradient(145deg, ${CHARCOAL} 0%, #2C2416 60%, #3D2E10 100%)`,
           padding: '60px 48px',
@@ -167,7 +168,7 @@ export default function LoginPage() {
         </div>
 
         {/* ── Right Panel — Form ── */}
-        <div style={{
+        <div className="rv-login-right" style={{
           flex: 1,
           display: 'flex',
           alignItems: 'center',
@@ -236,7 +237,7 @@ export default function LoginPage() {
                     onBlur={() => setFocusedInput(null)}
                     style={{ ...inputStyle('password'), paddingRight: '44px' }} />
                   <button type="button" onClick={() => setShowPassword(!showPassword)}
-                    style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#bbb', display: 'flex' }}>
+                    style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#bbb',alignItems: 'center', display: 'flex' }}>
                     {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
                   </button>
                 </div>
@@ -273,7 +274,7 @@ export default function LoginPage() {
                   <>
                     <div style={{ position: 'relative' }}>
                       {/* India flag + +91 */}
-                      <div style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: '6px', pointerEvents: 'none' }}>
+                      <div style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: '6px', pointerEvents: 'none'}}>
                         <FiGlobe style={{ color: GOLD_DARK }} />
                         <span style={{ fontSize: '13px', fontWeight: '600', color: CHARCOAL }}>+91</span>
                         <span style={{ color: '#ddd', marginLeft: '2px' }}>|</span>
@@ -282,7 +283,7 @@ export default function LoginPage() {
                         onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
                         onFocus={() => setFocusedInput('phone')}
                         onBlur={() => setFocusedInput(null)}
-                        style={{ ...inputStyle('phone'), paddingLeft: '90px' }} />
+                        style={{ ...inputStyle('phone'),  paddingLeft: '110px',fontSize: '14px', }} />
                     </div>
                     <button onClick={() => phone.length === 10 && setOtpSent(true)} className="submit-btn"
                       style={{

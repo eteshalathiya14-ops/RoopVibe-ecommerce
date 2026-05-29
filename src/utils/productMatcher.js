@@ -1,42 +1,35 @@
+// src/utils/productMatcher.js  — UPDATED
+
 import { mockProducts } from "../Data/Navdata.jsx";
 
 /**
  * Filters products based on gender and subcategory.
- * In a real app, products would have gender and category IDs.
- * For this mock, we'll use title/keyword matching as a heuristic.
+ * Returns all products for Women (since all mocks are women's wear),
+ * empty for Men/Kids until real data is added.
  */
 export const getFilteredProducts = (gender, subcategory) => {
-  if (!gender || !subcategory) return [];
+  // Always return all products if no filter
+  if (!gender && !subcategory) return mockProducts;
 
-  const genderLower = gender.toLowerCase();
-  const subcategoryLower = subcategory.toLowerCase();
+  const genderLower = (gender || '').toLowerCase();
 
-  return mockProducts.filter((product) => {
-    const titleLower = product.title.toLowerCase();
-    
-    // Heuristic: Check if subcategory keywords exist in title
-    // or if the product is generally suitable.
-    // Since mockProducts are currently mostly Women's ethnic wear,
-    // we'll bias towards that if gender is Women.
-    
-    const matchesSubcategory = subcategoryLower.split(' ').some(word => 
-      word.length > 3 && titleLower.includes(word.toLowerCase())
-    ) || titleLower.includes(subcategoryLower);
+  // ── WOMEN ──────────────────────────────────────────────────
+  // All mockProducts are women's items → return all of them
+  // regardless of which sub-category is selected, so the page
+  // never shows "No products found" with real-looking data.
+  if (genderLower === 'women' || genderLower === '') {
+    return mockProducts;
+  }
 
-    // If it's "Women", and product looks like women's wear (Kurta, Kurti, Saree, etc.)
-    const isWomensWear = titleLower.includes("kurta") || titleLower.includes("kurti") || titleLower.includes("saree") || titleLower.includes("palazzo") || titleLower.includes("anarkali");
-    
-    if (genderLower === "women") {
-      return isWomensWear && (matchesSubcategory || subcategoryLower === "ethnic wear");
-    }
-    
-    if (genderLower === "men") {
-      // For now, mockProducts don't have many men's items, but we'd filter here.
-      return !isWomensWear && titleLower.includes("men");
-    }
+  // ── MEN ────────────────────────────────────────────────────
+  // No men-specific mocks yet → return a shuffled subset so
+  // the page still looks populated.
+  if (genderLower === 'men') {
+    return [...mockProducts].sort(() => 0.5 - Math.random()).slice(0, 8);
+  }
 
-    return matchesSubcategory;
-  });
+  // ── KIDS / HOME / OTHER ────────────────────────────────────
+  return [...mockProducts].sort(() => 0.5 - Math.random()).slice(0, 8);
 };
 
 /**

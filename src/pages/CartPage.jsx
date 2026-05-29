@@ -25,12 +25,12 @@ export default function CartPage() {
   }
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '40px auto', padding: '0 24px' }}>
-      <h1 style={{ fontSize: '28px', color: CHARCOAL, marginBottom: '32px', fontFamily: 'Georgia, serif' }}>Your Shopping Bag ({cartCount})</h1>
-      
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '40px' }}>
+    <div className="rv-cart-container" style={{ maxWidth: '1000px', margin: '40px auto', padding: '0 24px' }}>
+      <h1 className="rv-cart-title" style={{ fontSize: '28px', color: CHARCOAL, marginBottom: '32px', fontFamily: 'Georgia, serif' }}>Your Shopping Bag ({cartCount})</h1>
+
+      <div className="rv-cart-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '40px' }}>
         {/* Items List */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div className="rv-cart-items" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {cartItems.map((item) => (
             <div key={item.id} style={{ display: 'flex', gap: '20px', padding: '20px', backgroundColor: '#fff', border: `1px solid ${BORDER}`, borderRadius: '8px' }}>
               <img src={item.img} alt={item.title} style={{ width: '100px', height: '130px', objectFit: 'cover', borderRadius: '4px' }} />
@@ -63,7 +63,7 @@ export default function CartPage() {
         </div>
 
         {/* Summary */}
-        <div style={{ position: 'sticky', top: '100px', height: 'fit-content', padding: '24px', backgroundColor: '#fff', border: `1px solid ${BORDER}`, borderRadius: '8px' }}>
+        <div className="rv-cart-summary" style={{ position: 'sticky', top: '100px', height: 'fit-content', padding: '24px', backgroundColor: '#fff', border: `1px solid ${BORDER}`, borderRadius: '8px' }}>
           <h2 style={{ fontSize: '18px', marginBottom: '20px', borderBottom: `1px solid ${BORDER}`, paddingBottom: '12px' }}>Order Summary</h2>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px' }}>
             <span style={{ color: MUTED }}>Total items</span>
@@ -81,6 +81,7 @@ export default function CartPage() {
           </p>
         </div>
       </div>
+      <div className="rv-cart-bottom-spacer" />
     </div>
   );
 }

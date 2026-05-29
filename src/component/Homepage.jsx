@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
+import { useWishlist } from "../context/WishlistContext";
 import { FiHeart, FiShare2, FiPlus, FiArrowRight, FiChevronLeft, FiChevronRight, FiStar } from "react-icons/fi";
 
 const GOLD       = "#C9A96E";
@@ -196,6 +197,28 @@ function HeroBanner() {
   };
   useEffect(() => { startTimer(); return () => clearInterval(timerRef.current); }, []);
 
+  const touchStartX = useRef(null);
+  const touchEndX = useRef(null);
+
+  const onTouchStart = (e) => {
+    touchStartX.current = e.touches?.[0]?.clientX ?? null;
+  };
+
+  const onTouchEnd = (e) => {
+    touchEndX.current = e.changedTouches?.[0]?.clientX ?? null;
+    if (touchStartX.current == null || touchEndX.current == null) return;
+
+    const dx = touchEndX.current - touchStartX.current;
+    // swipe threshold: ignore tiny movements
+    if (Math.abs(dx) < 40) return;
+
+    if (dx < 0) goTo(current + 1); // swipe left => next
+    else goTo(current - 1); // swipe right => prev
+
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
+
   const slide = bannerSlides[current];
   const H     = isMobile ? 170 : 260;
   const titleSz = isMobile ? "17px" : "28px";
@@ -211,7 +234,9 @@ function HeroBanner() {
       <div
         onMouseEnter={() => clearInterval(timerRef.current)}
         onMouseLeave={startTimer}
-        style={{ position:"relative", width: isMobile ? "95%" : "72%", maxWidth:"960px" }}
+        style={{ position:"relative", width: isMobile ? "95%" : "72%", maxWidth:"960px", touchAction: "pan-y" }}
+        onTouchStart={isMobile ? onTouchStart : undefined}
+        onTouchEnd={isMobile ? onTouchEnd : undefined}
       >
         <div style={{ position:"relative", height:H, borderRadius: isMobile ? 10:12, overflow:"hidden", boxShadow:"0 6px 32px rgba(201,169,110,0.18)", border:`1px solid ${GOLD}44`, background:slide.bg, transition:"background 0.6s" }}>
 
@@ -253,10 +278,16 @@ function HeroBanner() {
           </div>
 
           {/* arrows */}
-          {[{d:-1,p:"left"},{d:1,p:"right"}].map(({d,p})=>(
-            <button key={p} onClick={()=>goTo(current+d)} style={{ position:"absolute", top:"50%", [p]: isMobile ? 6:10, transform:"translateY(-50%)", width: isMobile ? 24:30, height: isMobile ? 24:30, borderRadius:"50%", backgroundColor:"rgba(26,20,8,0.55)", border:`1px solid ${GOLD}55`, color:GOLD, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", zIndex:10 }}>
-              {d===-1 ? <FiChevronLeft size={isMobile ? 14:18}/> : <FiChevronRight size={isMobile ? 14:18}/>}
-            </button>
+          {[{d:-1,p:"left"},{d:1,p:"right"}].map(({d,p})=> (
+            !isMobile && (
+              <button
+                key={p}
+                onClick={()=>goTo(current+d)}
+                style={{ position:"absolute", top:"50%", [p]: isMobile ? 6:10, transform:"translateY(-50%)", width: isMobile ? 24:30, height: isMobile ? 24:30, borderRadius:"50%", backgroundColor:"rgba(26,20,8,0.55)", border:`1px solid ${GOLD}55`, color:GOLD, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", zIndex:10 }}
+              >
+                {d===-1 ? <FiChevronLeft size={isMobile ? 14:18}/> : <FiChevronRight size={isMobile ? 14:18}/>}
+              </button>
+            )
           ))}
         </div>
 
@@ -287,11 +318,12 @@ function SectionHeading({ title, sub, isMobile }) {
 // ─────────────────────────────────────────────────────────
 function ProductCard({ product, isMobile }) {
   const { addToCart } = useCart();
-  const [wishlisted, setWishlisted] = useState(false);
+  const { toggleWishlist, isLiked } = useWishlist();
+  const liked = isLiked?.(product?.id);
   const [hov, setHov] = useState(false);
   const mainH = isMobile ? 160 : 220;
   const sideH = isMobile ? 78  : 108;
-  const moreCount = Math.floor(Math.random() * 20) + 5;
+  const moreCount = 12;
   const discount  = Math.round((1 - product.price/product.mrp)*100);
 
   return (
@@ -325,21 +357,47 @@ function ProductCard({ product, isMobile }) {
           </div>
         </div>
 
-        <div style={{ display:"flex", alignItems:"center", gap: isMobile ? 6:12, flexShrink:0 }}>
-          <button onClick={e=>{e.preventDefault();e.stopPropagation();setWishlisted(w=>!w);}} style={{ background:"none", border:"none", padding:0, cursor:"pointer", color: wishlisted ? "#ff4d4f":CHARCOAL, display:"flex", alignItems:"center" }}>
-            <FiHeart size={isMobile ? 15:18} fill={wishlisted ? "currentColor":"none"} />
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"flex-end", gap:8, flexShrink:0 }}>
+
+          <button
+            onClick={e=>{e.preventDefault();e.stopPropagation();toggleWishlist(product);}}
+            style={{ background:"none", border:"none", padding:0, cursor:"pointer", color: liked ? "#ff4d4f":CHARCOAL, display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.18s ease" }}
+          >
+            <FiHeart size={isMobile ? 15:18} fill={liked ? "#ff4d4f":"none"} stroke={liked ? "#ff4d4f":"currentColor"} />
           </button>
+
           {!isMobile && (
-            <button onClick={e=>{e.preventDefault();e.stopPropagation();}} style={{ background:"none", border:"none", padding:0, cursor:"pointer", color:CHARCOAL, display:"flex" }}>
-              <FiShare2 size={16} />
+            <button
+              onClick={e=>{e.preventDefault();e.stopPropagation();}}
+              style={{ background:"none", border:"none", padding:0, cursor:"pointer", color:CHARCOAL, display:"flex", alignItems:"center", justifyContent:"center" }}
+            >
+              <FiShare2 size={14} />
             </button>
           )}
-          <button
-            onClick={e=>{e.preventDefault();e.stopPropagation();addToCart(product);}}
-            style={{ background:GOLD, border:"none", borderRadius:"50%", width: isMobile ? 26:30, height: isMobile ? 26:30, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"#fff" }}
-          >
-            <FiPlus size={isMobile ? 13:18} />
-          </button>
+
+          {!isMobile && (
+            <button
+              onClick={e=>{e.preventDefault();e.stopPropagation();addToCart(product);}}
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                background: GOLD,
+                color: "#fff",
+                boxShadow: "0 2px 8px rgba(201,169,110,0.35)",
+                border: "none",
+                padding: 0,
+                cursor: "pointer",
+                transition: "transform 0.15s ease",
+              }}
+            >
+              <FiPlus size={isMobile ? 13 : 18} />
+            </button>
+          )}
         </div>
       </div>
     </div>
