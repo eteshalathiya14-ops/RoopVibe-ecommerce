@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>roopvibe</title>
+
+    <style>
+      /* Hide Google Translate default bar completely */
+      .goog-te-banner-frame,
+      .goog-te-balloon-frame,
+      #goog-gt-tt,
+      .goog-tooltip,
+      .goog-tooltip:hover {
+        display: none !important;
+      }
+      .goog-te-menu-value:hover { text-decoration: none !important; }
+      body { top: 0 !important; }
+      .skiptranslate { display: none !important; }
+    </style>
+    <script type="module" crossorigin src="/assets/index-Dk7AcNFN.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-CyWgVbxy.css">
+  </head>
+  <body>
+    <!-- Hidden Google Translate Element — DO NOT REMOVE -->
+    <div id="google_translate_element" style="display:none;"></div>
+
+    <div id="root"></div>
+
+    <script type="text/javascript">
+      function googleTranslateElementInit() {
+        new google.translate.TranslateElement({
+          pageLanguage: 'en',
+          includedLanguages: 'hi,gu,en',
+          autoDisplay: false,
+        }, 'google_translate_element');
+      }
+
+      // Global function — Navbar se call hoga
+      window.changeLanguage = function(langCode) {
+        if (langCode === 'en') {
+          // English pe wapas aao — cookie hatao aur reload karo
+          document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+          document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=" + window.location.hostname;
+          window.location.reload();
+          return;
+        }
+        // Hindi ya Gujarati
+        document.cookie = "googtrans=/en/" + langCode + "; path=/";
+        document.cookie = "googtrans=/en/" + langCode + "; path=/; domain=" + window.location.hostname;
+        window.location.reload();
+      }
+    </script>
+
+    <script
+      type="text/javascript"
+      src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
+    ></script>
+
+  </body>
+</html>
