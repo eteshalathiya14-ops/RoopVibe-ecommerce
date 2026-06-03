@@ -21,9 +21,9 @@
  * and call the API in each setter before updating state.
  */
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
-// ─── DEFAULT BANNERS ───────────────────────────────────────────
+// ─── DEFAULT BANNERS
 const DEFAULT_BANNERS = [
   {
     id: "b1",
@@ -420,36 +420,158 @@ let _nextId = 1000;
  const genId = () => `id_${_nextId++}`;
 
 export function AdminDataProvider({ children }) {
-  const [banners,    setBanners]    = useState(DEFAULT_BANNERS);
+  // start with defaults (fast render), then replace with DB data
+  const [banners, setBanners] = useState(DEFAULT_BANNERS);
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
-  const [products,   setProducts]   = useState(DEFAULT_PRODUCTS);
+  const [products, setProducts] = useState(DEFAULT_PRODUCTS);
 
-  // ── Banner helpers ────────────────────────────────────────
-  const addBanner    = (b)  => setBanners(p => [...p, { ...b, id: genId(), order: p.length }]);
-  const updateBanner = (b)  => setBanners(p => p.map(x => x.id === b.id ? b : x));
-  const deleteBanner = (id) => setBanners(p => p.filter(x => x.id !== id));
-  const reorderBanners = (arr) => setBanners(arr.map((b, i) => ({ ...b, order: i })));
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // ── Category helpers ──────────────────────────────────────
-  const addCategory    = (gender, cat)  => setCategories(p => ({ ...p, [gender]: [...(p[gender]||[]), { ...cat, id: genId(), order: (p[gender]||[]).length }] }));
-  const updateCategory = (gender, cat)  => setCategories(p => ({ ...p, [gender]: p[gender].map(x => x.id === cat.id ? cat : x) }));
-  const deleteCategory = (gender, id)   => setCategories(p => ({ ...p, [gender]: p[gender].filter(x => x.id !== id) }));
+  useEffect(() => {
+    let cancelled = false;
 
-  // ── Product helpers ───────────────────────────────────────
-  const addProduct    = (prod) => setProducts(p => [...p, { ...prod, id: genId() }]);
-  const updateProduct = (prod) => setProducts(p => p.map(x => x.id === prod.id ? prod : x));
-  const deleteProduct = (id)   => setProducts(p => p.filter(x => x.id !== id));
+    async function load() {
+      setLoading(true);
+      setError("");
+      try {
+        // Dynamic import avoids circular deps / keeps file smaller
+        const HomepageApi = await import("../../Api/HomepageApi.js");
+        const [b, c, p] = await Promise.all([
+          HomepageApi.fetchAllBanners(),
+          HomepageApi.fetchAllCategoriesGrouped(),
+          HomepageApi.fetchAllProducts(),
+        ]);
+
+        if (cancelled) return;
+        setBanners(Array.isArray(b) ? b : []);
+        setCategories(c && typeof c === "object" ? c : {});
+        setProducts(Array.isArray(p) ? p : []);
+      } catch (e) {
+        if (cancelled) return;
+        setError(e?.message || "Failed to load admin data");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function refreshAll() {
+    const HomepageApi = await import("../../Api/HomepageApi.js");
+    const [b, c, p] = await Promise.all([
+      HomepageApi.fetchAllBanners(),
+      HomepageApi.fetchAllCategoriesGrouped(),
+      HomepageApi.fetchAllProducts(),
+    ]);
+    setBanners(Array.isArray(b) ? b : []);
+    setCategories(c && typeof c === "object" ? c : {});
+    setProducts(Array.isArray(p) ? p : []);
+  }
+
+  // ── Banner helpers (backend connected) ─────────────────────
+  const addBanner = async (payload) => {
+    const HomepageApi = await import("../../Api/HomepageApi.js");
+    await HomepageApi.addBanner(payload);
+    await refreshAll();
+  };
+
+  const updateBanner = async (payload) => {
+    const HomepageApi = await import("../../Api/HomepageApi.js");
+    const id = payload?.id;
+    if (!id) return;
+    await HomepageApi.updateBanner(id, payload);
+    await refreshAll();
+  };
+
+  const deleteBanner = async (id) => {
+    const HomepageApi = await import("../../Api/HomepageApi.js");
+    await HomepageApi.deleteBanner(id);
+    await refreshAll();
+  };
+
+  // reorder banners: update order field + refresh
+  const reorderBanners = async (arr) => {
+    const HomepageApi = await import("../../Api/HomepageApi.js");
+    const updates = (arr || []).map((b, i) => HomepageApi.updateBanner(b.id, { ...b, order: i }));
+    await Promise.all(updates);
+    await refreshAll();
+  };
+
+  // ── Category helpers (backend connected) ────────────────
+  const addCategory = async (gender, cat) => {
+    const HomepageApi = await import("../../Api/HomepageApi.js");
+    await HomepageApi.addCategory(gender, cat);
+    await refreshAll();
+  };
+
+  const updateCategory = async (gender, cat) => {
+    const HomepageApi = await import("../../Api/HomepageApi.js");
+    // HomepageApi.updateCategory expects (gender, item) but internally uses item.id/_id
+    await HomepageApi.updateCategory(gender, cat);
+    await refreshAll();
+  };
+
+
+  const deleteCategory = async (gender, id) => {
+    const HomepageApi = await import("../../Api/HomepageApi.js");
+    await HomepageApi.deleteCategory(gender, id);
+    await refreshAll();
+  };
+
+  // ── Product helpers (backend connected) ────────────────────
+  const addProduct = async (payload) => {
+    const HomepageApi = await import("../../Api/HomepageApi.js");
+    await HomepageApi.addProduct(payload);
+    await refreshAll();
+  };
+
+  const updateProduct = async (payload) => {
+    const HomepageApi = await import("../../Api/HomepageApi.js");
+    const id = payload?.id;
+    if (!id) return;
+    await HomepageApi.updateProduct(id, payload);
+    await refreshAll();
+  };
+
+  const deleteProduct = async (id) => {
+    const HomepageApi = await import("../../Api/HomepageApi.js");
+    await HomepageApi.deleteProduct(id);
+    await refreshAll();
+  };
 
   return (
-    <AdminDataContext.Provider value={{
-      banners, setBanners, addBanner, updateBanner, deleteBanner, reorderBanners,
-      categories, setCategories, addCategory, updateCategory, deleteCategory,
-      products, setProducts, addProduct, updateProduct, deleteProduct,
-    }}>
+    <AdminDataContext.Provider
+      value={{
+        banners,
+        setBanners,
+        addBanner,
+        updateBanner,
+        deleteBanner,
+        reorderBanners,
+        categories,
+        setCategories,
+        addCategory,
+        updateCategory,
+        deleteCategory,
+        products,
+        setProducts,
+        addProduct,
+        updateProduct,
+        deleteProduct,
+        loading,
+        error,
+      }}
+    >
       {children}
     </AdminDataContext.Provider>
   );
 }
+
 
 export function useAdminData() {
   const ctx = useContext(AdminDataContext);

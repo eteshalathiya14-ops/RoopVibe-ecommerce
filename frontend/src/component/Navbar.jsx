@@ -10,7 +10,7 @@ import { useCart } from '../context/CartContext';
 import { FiSearch, FiShoppingCart, FiUser, FiX, FiHeart } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
-import { fetchNavbar } from '../api/navbarApi';
+import { fetchNavbar } from '../Api/Navbarapi';
 
 const GOLD       = '#C9A96E';
 const GOLD_LIGHT = '#F5EDD9';
