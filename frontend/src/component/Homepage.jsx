@@ -12,6 +12,7 @@ import { useCart }     from "../context/CartContext";
 import { useWishlist } from "../context/WishlistContext";
 import { useAdminData } from "../Admin/context/Admindatacontext";
 import { FiHeart, FiPlus, FiArrowRight, FiChevronLeft, FiChevronRight, FiStar, FiShoppingBag, FiCheck } from "react-icons/fi";
+import { getCategoryPath, toSlug } from "../utils/categoryIndex";
 
 const GOLD       = "#C9A96E";
 const GOLD_DARK  = "#A07840";
@@ -59,7 +60,7 @@ function useIsMobile() {
 }
 
 // ─── Arch Cat Item ─────────────────────────────────────────────
-function ArchCatItem({ cat, isActive, onClick, isMobile }) {
+function ArchCatItem({ cat, isActive, onClick, isMobile, activeTab }) {
   const W  = isMobile ? 62 : 80;
   const H  = isMobile ? 76 : 96;
   const BR = isMobile ? "31px 31px 6px 6px" : "40px 40px 8px 8px";
@@ -68,7 +69,14 @@ function ArchCatItem({ cat, isActive, onClick, isMobile }) {
 
   const handleClick = () => {
     onClick();
-    if (cat.link) navigate(cat.link);
+    // Build proper /category/ URL
+    // cat.link can be set by admin, otherwise build from label + activeTab
+    if (cat.link) {
+      navigate(cat.link);
+    } else if (cat.label && activeTab) {
+      const path = getCategoryPath(activeTab, "", cat.label);
+      navigate(path);
+    }
   };
 
   return (
@@ -123,7 +131,7 @@ function CategoryBar({ activeTab, setActiveTab }) {
       </div>
       <div style={{ display:"flex", alignItems:"flex-end", overflowX:"auto", padding: isMobile ? "10px 8px 8px":"16px 32px 12px", gap:"2px", scrollbarWidth:"none", WebkitOverflowScrolling:"touch" }}>
         {cats.map(cat => (
-          <ArchCatItem key={cat.id || cat._id} cat={cat} isActive={activeItem===cat.label} onClick={() => setActiveItem(cat.label)} isMobile={isMobile} />
+          <ArchCatItem key={cat.id || cat._id} cat={cat} isActive={activeItem===cat.label} onClick={() => setActiveItem(cat.label)} isMobile={isMobile} activeTab={activeTab} />
         ))}
       </div>
     </div>

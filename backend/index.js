@@ -1,11 +1,13 @@
 const express = require("express");
 const cors    = require("cors");
 const dotenv  = require("dotenv");
-dotenv.config();
+dotenv.config({ path: __dirname + "/.env" });
 
 const connectDB    = require("./config/connection");
 const navbarRoutes = require("./routes/navbarroutes");
 const homeRoutes   = require("./routes/home.routes");
+const authRoutes   = require("./routes/auth.routes");
+const filterRoutes = require("./routes/categoryfilter.routes"); 
 
 const app = express();
 
@@ -16,8 +18,10 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 // Routes
-app.use("/api/navbar", navbarRoutes);
-app.use("/api/home",   homeRoutes);
+app.use("/api/navbar",            navbarRoutes);
+app.use("/api/home",              homeRoutes);
+app.use("/api/auth",              authRoutes);
+app.use("/api/category-filters",  filterRoutes); // ← ADD THIS
 
 app.get("/", (req, res) => res.json({ ok: true }));
 
