@@ -28,9 +28,11 @@ export function WishlistProvider({ children }) {
   };
 
   const toggleWishlist = (product) => {
-    if (!product || typeof product.id === 'undefined' || product.id === null) return;
-    const id = product.id;
-    setLikedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    if (!product) return;
+    const id = product.id ?? product._id;
+    if (typeof id === 'undefined' || id === null) return;
+    const strId = String(id);
+    setLikedIds((prev) => (prev.includes(strId) ? prev.filter((x) => x !== strId) : [...prev, strId]));
   };
 
   const likedCount = likedIds.length;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FiMenu, FiImage, FiGrid, FiPackage, FiEye, FiHome, FiX,FiShoppingBag,FiTag } from "react-icons/fi";
+import { FiMenu, FiImage, FiGrid, FiPackage, FiEye, FiHome, FiX,FiShoppingBag,FiTag,FiFilter   } from "react-icons/fi";
 import { Link } from "react-router-dom";
 
 import BannerAdmin      from "./Banneradmin";
@@ -8,6 +8,7 @@ import ProductAdmin     from "./Productadmin";
 import NavbarAdminPage  from "./Navbaradminpage";
 import OrderAdminPage   from "./Orderadmin";
 import OffersAdminPage from "./Offersadmin";
+import FilterAdmin      from "./Filteradmin";
 import PreviewPage      from "./Previewpage";
 
 import { useAdminData } from "./context/Admindatacontext";
@@ -22,6 +23,7 @@ const NAV = [
   { key:"products",  icon:<FiPackage size={16}/>, label:"Products",      desc:"Full product CRUD" },
   { key:"orders", icon:<FiShoppingBag size={16}/>, label:"Orders", desc:"Manage all orders" },
   { key:"offers", icon:<FiTag size={16}/>, label:"Offers & Deals", desc:"Banners, coupons, flash" },
+  { key:"filters",   icon:<FiFilter  size={16}/>,    label:"Category filters",  desc:"Faceted filters for category pages" },
   { key:"preview",   icon:<FiEye size={16}/>,     label:"Preview",       desc:"Live data preview" },
 ];
 
@@ -128,6 +130,7 @@ export default function AdminPanel() {
         {page === "products" && <ProductAdmin />}
         {page === "orders" && <OrderAdminPage />}
         {page === "offers" && <OffersAdminPage />}
+        {page === "filters" && <FilterAdmin />}
         {page === "preview"  && <PreviewPage />}
       </div>
     </div>

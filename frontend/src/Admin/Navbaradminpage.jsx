@@ -7,7 +7,7 @@ import {
 import {
   fetchAllNavbar, addNavItem, updateNavItem,
   deleteNavItem, saveColumns,
-} from "../api/navbarApi";
+} from "../Api/Navbarapi";
 
 // ── Theme ────────────────────────────────────────────────────────
 const GOLD       = "#C9A96E";

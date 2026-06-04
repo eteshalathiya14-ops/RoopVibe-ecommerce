@@ -1,5 +1,13 @@
-import { useState } from "react";
+/**
+ * ProductAdmin.jsx — FIXED
+ * 1. Custom dropdown value: inline input field (no alert box)
+ * 2. Custom options saved in localStorage per product type + field
+ * 3. On edit, previously saved custom options show in dropdown
+ * 4. All other logic preserved
+ */
+import { useState, useRef } from "react";
 import { FiPlus, FiEdit2, FiTrash2, FiSave, FiX, FiUpload, FiImage, FiChevronDown } from "react-icons/fi";
+
 import { useAdminData } from "./context/Admindatacontext";
 import {
   Btn, Modal, FormGroup, Input, TextArea, Select, Toggle, Toast,
@@ -9,6 +17,31 @@ import {
 
 let _pid = 200;
 const genId = () => `pid_${_pid++}`;
+
+// ── Custom options storage (per productType + field) ──────────
+const CUSTOM_OPTS_KEY = "rvibe_admin_custom_opts";
+
+function getCustomOpts() {
+  try {
+    const saved = localStorage.getItem(CUSTOM_OPTS_KEY);
+    return saved ? JSON.parse(saved) : {};
+  } catch { return {}; }
+}
+
+function saveCustomOpt(productType, field, value) {
+  const all = getCustomOpts();
+  const key = `${productType}__${field}`;
+  if (!all[key]) all[key] = [];
+  if (!all[key].includes(value)) {
+    all[key] = [...all[key], value];
+    try { localStorage.setItem(CUSTOM_OPTS_KEY, JSON.stringify(all)); } catch {}
+  }
+}
+
+function getCustomOptsForField(productType, field) {
+  const all = getCustomOpts();
+  return all[`${productType}__${field}`] || [];
+}
 
 // ── Navbar Structure ───────────────────────────────────────
 const NAVBAR_STRUCTURE = [
@@ -66,7 +99,7 @@ function getProductType(navName, colTitle, subItem) {
   if (s.includes("jeans") || s.includes("trousers") || s.includes("cargos") || s.includes("joggers") || s.includes("shorts") || s.includes("bottom wear")) return "bottom";
   if (s.includes("shirt") || s.includes("t-shirt") || s.includes("top") || s.includes("tunic") || s.includes("dress") || s.includes("co ord") || s.includes("suit") || s.includes("blazer") || s.includes("polo")) return "top";
   if (s.includes("kids") || s.includes("boys") || s.includes("girls")) return "kids_clothing";
-  return "clothing"; // default
+  return "clothing";
 }
 
 // ── Size Sets ──────────────────────────────────────────────
@@ -88,7 +121,6 @@ const SIZE_SETS = {
 };
 
 // ── Details Config per product type ───────────────────────
-// Each type defines exactly which fields to show with their options
 const DETAILS_CONFIG = {
   ethnic: {
     fields: ["fabric","pattern","occasion","fit","washCare","description"],
@@ -178,7 +210,7 @@ const DETAILS_CONFIG = {
     material: ["Wood","Metal","Fabric","Ceramic","Glass","Plastic","Jute","Resin","Bamboo"],
     color:    ["Multicolor","Gold","Silver","Brown","White","Black","Beige","Blue","Green","Red"],
     occasion: ["Everyday","Festive","Diwali Decor","Christmas","Wedding Decor","Gift"],
-    dimensions: [], // free text
+    dimensions: [],
   },
   kitchen: {
     fields: ["material","capacity","safeFor","description"],
@@ -203,35 +235,16 @@ const DETAILS_CONFIG = {
   },
 };
 
-// Field display labels
 const FIELD_LABELS = {
-  fabric:        "Fabric / Material",
-  pattern:       "Pattern / Style",
-  occasion:      "Occasion",
-  fit:           "Fit Type",
-  washCare:      "Wash Care",
-  description:   "Product Description",
-  blouseIncluded:"Blouse",
-  sareeLength:   "Saree Length",
-  setIncludes:   "Set Includes",
-  neckType:      "Neck Type",
-  sleeveType:    "Sleeve Type",
-  rise:          "Rise",
-  closure:       "Closure Type",
-  activity:      "Activity / Sport",
-  padding:       "Padding",
-  wiretype:      "Wire Type",
-  material:      "Material",
-  sole:          "Sole Type",
-  heelHeight:    "Heel Height",
-  plating:       "Plating / Finish",
-  stoneType:     "Stone Type",
-  threadCount:   "Thread Count",
-  sets:          "Set Includes",
-  color:         "Color",
-  dimensions:    "Dimensions / Size",
-  capacity:      "Capacity",
-  safeFor:       "Safe For",
+  fabric:"Fabric / Material", pattern:"Pattern / Style", occasion:"Occasion",
+  fit:"Fit Type", washCare:"Wash / Care", description:"Product Description",
+  blouseIncluded:"Blouse", sareeLength:"Saree Length", setIncludes:"Set Includes",
+  neckType:"Neck Type", sleeveType:"Sleeve Type", rise:"Rise", closure:"Closure Type",
+  activity:"Activity / Sport", padding:"Padding", wiretype:"Wire Type",
+  material:"Material", sole:"Sole Type", heelHeight:"Heel Height",
+  plating:"Plating / Finish", stoneType:"Stone Type", threadCount:"Thread Count",
+  sets:"Set Includes", color:"Color", dimensions:"Dimensions / Size",
+  capacity:"Capacity", safeFor:"Safe For",
 };
 
 const EMPTY_PRODUCT = {
@@ -281,24 +294,14 @@ function CategorySelector({ navName, colTitle, subItem, onChange }) {
             <div style={{ borderRight: selNav ? `1px solid ${BORDER}` : "none" }}>
               <div style={{ padding: "8px 12px 4px", fontSize: 10, fontWeight: 700, color: MUTED, letterSpacing: "0.8px" }}>NAVBAR</div>
               {NAVBAR_STRUCTURE.map(n => (
-                <div key={n.name} onClick={() => pickNav(n.name)} style={{
-                  padding: "9px 14px", fontSize: 13, cursor: "pointer",
-                  fontWeight: selNav === n.name ? 700 : 400,
-                  color: selNav === n.name ? GOLD_DARK : CHARCOAL,
-                  background: selNav === n.name ? GOLD_LIGHT : "transparent",
-                }}>{n.name}</div>
+                <div key={n.name} onClick={() => pickNav(n.name)} style={{ padding: "9px 14px", fontSize: 13, cursor: "pointer", fontWeight: selNav === n.name ? 700 : 400, color: selNav === n.name ? GOLD_DARK : CHARCOAL, background: selNav === n.name ? GOLD_LIGHT : "transparent" }}>{n.name}</div>
               ))}
             </div>
             {selNav && navItem && (
               <div style={{ borderRight: selCol ? `1px solid ${BORDER}` : "none" }}>
                 <div style={{ padding: "8px 12px 4px", fontSize: 10, fontWeight: 700, color: MUTED, letterSpacing: "0.8px" }}>CATEGORY</div>
                 {navItem.columns.map(col => (
-                  <div key={col.title} onClick={() => pickCol(col.title)} style={{
-                    padding: "9px 14px", fontSize: 12, cursor: "pointer",
-                    fontWeight: selCol === col.title ? 700 : 400,
-                    color: selCol === col.title ? GOLD_DARK : CHARCOAL,
-                    background: selCol === col.title ? GOLD_LIGHT : "transparent",
-                  }}>{col.title}</div>
+                  <div key={col.title} onClick={() => pickCol(col.title)} style={{ padding: "9px 14px", fontSize: 12, cursor: "pointer", fontWeight: selCol === col.title ? 700 : 400, color: selCol === col.title ? GOLD_DARK : CHARCOAL, background: selCol === col.title ? GOLD_LIGHT : "transparent" }}>{col.title}</div>
                 ))}
               </div>
             )}
@@ -306,12 +309,7 @@ function CategorySelector({ navName, colTitle, subItem, onChange }) {
               <div>
                 <div style={{ padding: "8px 12px 4px", fontSize: 10, fontWeight: 700, color: MUTED, letterSpacing: "0.8px" }}>SUB-CATEGORY</div>
                 {colItem.items.map(it => (
-                  <div key={it} onClick={() => pickSub(it)} style={{
-                    padding: "9px 14px", fontSize: 12, cursor: "pointer",
-                    color: subItem === it ? GOLD_DARK : CHARCOAL,
-                    background: subItem === it ? GOLD_LIGHT : "transparent",
-                    fontWeight: subItem === it ? 700 : 400,
-                  }}>{it}</div>
+                  <div key={it} onClick={() => pickSub(it)} style={{ padding: "9px 14px", fontSize: 12, cursor: "pointer", color: subItem === it ? GOLD_DARK : CHARCOAL, background: subItem === it ? GOLD_LIGHT : "transparent", fontWeight: subItem === it ? 700 : 400 }}>{it}</div>
                 ))}
               </div>
             )}
@@ -345,6 +343,111 @@ function SizeSelector({ sizes, productType, onChange }) {
   );
 }
 
+// ── Inline Custom Dropdown — NO alert box ──────────────────
+function CustomDropdown({ field, productType, options, value, onChange }) {
+  const [showInput, setShowInput] = useState(false);
+  const [customVal, setCustomVal] = useState("");
+  const inputRef = useRef(null);
+
+  // Merge base options + previously saved custom options
+  const customSaved = getCustomOptsForField(productType, field);
+  const allOptions = [...options, ...customSaved.filter(c => !options.includes(c))];
+
+  // Current selected values (array for multi, string for single)
+  const selectedArr = Array.isArray(value) ? value : (value ? [value] : []);
+
+  const handleSelect = (v) => {
+    // Toggle in array
+    if (selectedArr.includes(v)) {
+      const filtered = selectedArr.filter(x => x !== v);
+      onChange(filtered.length > 0 ? filtered : "");
+    } else {
+      onChange([...selectedArr, v]);
+    }
+  };
+
+  const handleAddCustom = () => {
+    const trimmed = customVal.trim();
+    if (!trimmed) return;
+    // Save to localStorage
+    saveCustomOpt(productType, field, trimmed);
+    // Add to selection
+    onChange([...selectedArr, trimmed]);
+    setCustomVal("");
+    setShowInput(false);
+  };
+
+  const removeSelected = (v) => {
+    const filtered = selectedArr.filter(x => x !== v);
+    onChange(filtered.length > 0 ? filtered : "");
+  };
+
+  return (
+    <div>
+      {/* Dropdown select */}
+      <div style={{ border: `1px solid ${BORDER}`, borderRadius: 8, background: WHITE, overflow: "hidden" }}>
+        <div style={{ maxHeight: 140, overflowY: "auto" }}>
+          {allOptions.map(opt => {
+            const isSelected = selectedArr.includes(opt);
+            return (
+              <div key={opt} onClick={() => handleSelect(opt)}
+                style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", cursor: "pointer", background: isSelected ? GOLD_LIGHT : "transparent", borderBottom: `1px solid ${BORDER}`, fontSize: 12, color: isSelected ? GOLD_DARK : CHARCOAL, fontWeight: isSelected ? 600 : 400 }}>
+                <div style={{ width: 14, height: 14, borderRadius: 3, border: `1.5px solid ${isSelected ? GOLD : BORDER}`, background: isSelected ? GOLD : "transparent", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {isSelected && <svg width="9" height="9" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="1.8" fill="none" strokeLinecap="round"/></svg>}
+                </div>
+                {opt}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Add custom option inline */}
+        {showInput ? (
+          <div style={{ display: "flex", gap: 6, padding: "8px 10px", borderTop: `1px solid ${BORDER}`, background: SURFACE }}>
+            <input
+              ref={inputRef}
+              autoFocus
+              value={customVal}
+              onChange={e => setCustomVal(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") handleAddCustom(); if (e.key === "Escape") { setShowInput(false); setCustomVal(""); } }}
+              placeholder="Type custom value, press Enter…"
+              style={{ flex: 1, padding: "6px 10px", border: `1px solid ${GOLD}`, borderRadius: 6, fontSize: 12, fontFamily: "inherit", outline: "none", color: CHARCOAL }}
+            />
+            <button onClick={handleAddCustom}
+              style={{ padding: "6px 12px", background: GOLD, color: "#fff", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+              Add
+            </button>
+            <button onClick={() => { setShowInput(false); setCustomVal(""); }}
+              style={{ padding: "6px 8px", background: "none", border: `1px solid ${BORDER}`, borderRadius: 6, fontSize: 11, cursor: "pointer", color: MUTED }}>
+              <FiX size={12}/>
+            </button>
+          </div>
+        ) : (
+          <div onClick={() => { setShowInput(true); setTimeout(() => inputRef.current?.focus(), 50); }}
+            style={{ padding: "8px 12px", cursor: "pointer", fontSize: 12, color: GOLD_DARK, fontWeight: 600, borderTop: `1px solid ${BORDER}`, display: "flex", alignItems: "center", gap: 6, background: "#fffdf8" }}>
+            <FiPlus size={12}/> Add custom value
+          </div>
+        )}
+      </div>
+
+      {/* Selected tags */}
+      {selectedArr.length > 0 && (
+        <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {selectedArr.map((val, i) => (
+            <span key={i} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, border: `1px solid ${GOLD}`, background: GOLD_LIGHT, color: GOLD_DARK, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 5 }}>
+              {String(val)}
+              <button onClick={() => removeSelected(val)}
+                style={{ border: "none", background: "none", cursor: "pointer", color: MUTED, fontSize: 13, lineHeight: 1, padding: 0, display: "flex", alignItems: "center" }}>
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Dynamic Details Form ───────────────────────────────────
 function DetailsForm({ productType, details, onChange }) {
   const config = DETAILS_CONFIG[productType] || DETAILS_CONFIG.clothing;
@@ -358,9 +461,8 @@ function DetailsForm({ productType, details, onChange }) {
 
   return (
     <div>
-      {/* Product type badge */}
       <div style={{ marginBottom: 16, display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 12px", background: GOLD_LIGHT, borderRadius: 20, fontSize: 12, color: GOLD_DARK, fontWeight: 700 }}>
-        Showing fields for: {productType.replace(/_/g, " ").toUpperCase()}
+        Fields for: {productType.replace(/_/g, " ").toUpperCase()}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -378,7 +480,13 @@ function DetailsForm({ productType, details, onChange }) {
 
           return (
             <FormGroup key={field} label={label}>
-              <Select value={details[field] || options[0]} onChange={v => set(field, v)} options={options} />
+              <CustomDropdown
+                field={field}
+                productType={productType}
+                options={options}
+                value={details[field] || ""}
+                onChange={v => set(field, v)}
+              />
             </FormGroup>
           );
         })}
@@ -401,8 +509,7 @@ function DetailsForm({ productType, details, onChange }) {
       {/* Description — always full width last */}
       {config.fields.includes("description") && (
         <FormGroup label="Product Description">
-          <TextArea value={details.description || ""} onChange={v => set("description", v)}
-            placeholder="Describe the product in detail…" rows={4} />
+          <TextArea value={details.description || ""} onChange={v => set("description", v)} placeholder="Describe the product in detail…" rows={4} />
         </FormGroup>
       )}
     </div>
@@ -519,14 +626,14 @@ function ProductForm({ form, setForm }) {
         ))}
       </div>
 
-      {/* ── BASIC ── */}
+      {/* BASIC */}
       {tab === "basic" && (
         <div>
-          <FormGroup label="Category Path *  (Navbar → Category → Sub-category)">
+          <FormGroup label="Category Path * (Navbar → Category → Sub-category)">
             <CategorySelector navName={form.navName} colTitle={form.colTitle} subItem={form.subItem} onChange={handleCategoryChange} />
             {form.navName && (
               <div style={{ marginTop: 6, fontSize: 11, color: GOLD_DARK, background: GOLD_LIGHT, padding: "4px 10px", borderRadius: 6 }}>
-                Product will appear under: <strong>{form.navName}{form.colTitle ? ` › ${form.colTitle}` : ""}{form.subItem ? ` › ${form.subItem}` : ""}</strong>
+                Will appear under: <strong>{form.navName}{form.colTitle ? ` › ${form.colTitle}` : ""}{form.subItem ? ` › ${form.subItem}` : ""}</strong>
               </div>
             )}
           </FormGroup>
@@ -535,7 +642,9 @@ function ProductForm({ form, setForm }) {
             <FormGroup label="Product Title *">
               <Input value={form.title} onChange={v => set("title", v)} placeholder="e.g. Printed Anarkali Kurta" />
             </FormGroup>
-            <div />
+            <FormGroup label="Brand Name">
+              <Input value={form.brand || ""} onChange={v => set("brand", v)} placeholder="e.g. RoopVibe, W, Zara" />
+            </FormGroup>
             <FormGroup label="Selling Price (₹) *">
               <Input value={form.price} onChange={v => set("price", v)} placeholder="899" type="number" />
             </FormGroup>
@@ -570,7 +679,7 @@ function ProductForm({ form, setForm }) {
         </div>
       )}
 
-      {/* ── IMAGES ── */}
+      {/* IMAGES */}
       {tab === "images" && (
         <div>
           <p style={{ fontSize: 12, color: MUTED, marginBottom: 12 }}>
@@ -580,7 +689,7 @@ function ProductForm({ form, setForm }) {
         </div>
       )}
 
-      {/* ── DETAILS ── */}
+      {/* DETAILS */}
       {tab === "details" && (
         <DetailsForm
           productType={form.navName ? productType : null}
@@ -589,7 +698,7 @@ function ProductForm({ form, setForm }) {
         />
       )}
 
-      {/* ── HIGHLIGHTS ── */}
+      {/* HIGHLIGHTS */}
       {tab === "highlights" && (
         <div>
           <p style={{ fontSize: 12, color: MUTED, marginBottom: 10 }}>
@@ -680,6 +789,7 @@ export default function ProductAdmin() {
                     <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>
                       ₹{p.price} <span style={{ textDecoration: "line-through" }}>₹{p.mrp}</span>{" "}
                       <span style={{ color: "#2E7D32", fontWeight: 600 }}>{disc(p)}% off</span>
+                      {p.brand && <span> · {p.brand}</span>}
                       {" · "}{p.colorVariants?.length || 0} colors
                       {p.navName && <span> · {p.navName}{p.colTitle ? ` › ${p.colTitle}` : ""}{p.subItem ? ` › ${p.subItem}` : ""}</span>}
                     </div>
