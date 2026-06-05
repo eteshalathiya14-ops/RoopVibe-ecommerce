@@ -4,6 +4,7 @@ const dotenv  = require("dotenv");
 dotenv.config({ path: __dirname + "/.env" });
 
 const connectDB    = require("./config/connection");
+const { ensureUserIndexes } = require("./utils/userIndexes");
 const navbarRoutes = require("./routes/navbarroutes");
 const homeRoutes   = require("./routes/home.routes");
 const authRoutes   = require("./routes/auth.routes");
@@ -28,6 +29,7 @@ app.get("/", (req, res) => res.json({ ok: true }));
 const startServer = async () => {
   try {
     await connectDB();
+    await ensureUserIndexes();
     console.log(" MongoDB Connected Successfully");
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

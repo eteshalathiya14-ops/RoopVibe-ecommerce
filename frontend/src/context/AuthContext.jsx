@@ -54,6 +54,7 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     localStorage.removeItem('roopvibe_auth');
     localStorage.removeItem('roopvibe_user');
+    localStorage.removeItem('roopvibe_token');
   };
 
   useEffect(() => {

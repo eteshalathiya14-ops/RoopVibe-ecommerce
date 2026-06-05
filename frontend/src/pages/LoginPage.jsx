@@ -1,35 +1,263 @@
-import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FiMail, FiLock, FiEye, FiEyeOff, FiArrowRight, FiShield, FiTag, FiTruck, FiSmile, FiGlobe } from 'react-icons/fi';
+import { GoogleLogin } from '@react-oauth/google';
+import {
+  login as loginApi,
+  register as registerApi,
+  resendVerification,
+  verifyEmail,
+  verifyEmailCode,
+  googleLogin as googleLoginApi,
+  sendPhoneOtp,
+  verifyPhoneOtp,
+} from '../Api/Authapi';
+import { FiMail, FiLock, FiEye, FiEyeOff, FiArrowRight, FiShield, FiTag, FiTruck, FiSmile, FiGlobe, FiUser, FiCheckCircle } from 'react-icons/fi';
+
+const STRONG_PASSWORD_RE =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
+const STRONG_PASSWORD_MSG =
+  'Password must be at least 8 characters with uppercase, lowercase, a number, and a special character.';
+
+function isStrongPassword(password) {
+  return STRONG_PASSWORD_RE.test(password);
+}
+
+function getPasswordChecks(password) {
+  return [
+    { label: 'At least 8 characters', ok: password.length >= 8 },
+    { label: 'One uppercase letter', ok: /[A-Z]/.test(password) },
+    { label: 'One lowercase letter', ok: /[a-z]/.test(password) },
+    { label: 'One number', ok: /\d/.test(password) },
+    { label: 'One special character', ok: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password) },
+  ];
+}
 
 const GOLD = '#C9A96E';
 const GOLD_DARK = '#A07840';
 const GOLD_LIGHT = '#F5EDD9';
 const CHARCOAL = '#1A1A1A';
 
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+
+const GRADIENT_BTN = (enabled) => ({
+  backgroundImage: enabled
+    ? `linear-gradient(to right, ${GOLD_DARK}, ${GOLD}, ${GOLD_DARK})`
+    : 'none',
+  backgroundColor: enabled ? 'transparent' : '#E8E0D5',
+  backgroundSize: '200% auto',
+});
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [emailMode, setEmailMode] = useState('login'); // 'login' | 'signup'
   const [activeTab, setActiveTab] = useState('login'); // 'login' | 'otp'
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [otpSent, setOtpSent] = useState(false);
   const [phone, setPhone] = useState('');
   const [focusedInput, setFocusedInput] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [signupSuccess, setSignupSuccess] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState('');
+  const [verifyUrl, setVerifyUrl] = useState('');
+  const [displayedCode, setDisplayedCode] = useState('');
+  const [verifyCodeInput, setVerifyCodeInput] = useState('');
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [verifyDone, setVerifyDone] = useState(false);
+  const [phoneLoading, setPhoneLoading] = useState(false);
+  const [otpError, setOtpError] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const from = location.state?.from?.pathname || '/';
 
-  const handleSubmit = (e) => {
+  const applyVerificationData = (data) => {
+    if (data.verifyUrl) setVerifyUrl(data.verifyUrl);
+    if (data.verificationCode) setDisplayedCode(data.verificationCode);
+  };
+
+  useEffect(() => {
+    const token = searchParams.get('verifyToken');
+    if (!token) return;
+
+    let cancelled = false;
+    setVerifyLoading(true);
+    setSignupSuccess(true);
+
+    verifyEmail(token)
+      .then((data) => {
+        if (cancelled) return;
+        login({ token: data.token, user: data.user });
+        setVerifyDone(true);
+        setSearchParams({}, { replace: true });
+        setTimeout(() => navigate(from, { replace: true }), 1500);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err.message || 'Verification link expired.');
+        setSignupSuccess(true);
+      })
+      .finally(() => {
+        if (!cancelled) setVerifyLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [searchParams, login, navigate, from, setSearchParams]);
+
+  const handleVerifyCode = async () => {
+    const targetEmail = pendingEmail || email.trim().toLowerCase();
+    if (!targetEmail || verifyCodeInput.length !== 6) {
+      setError('Enter the 6-digit verification code.');
+      return;
+    }
+    setVerifyLoading(true);
+    setError('');
+    try {
+      const data = await verifyEmailCode(targetEmail, verifyCodeInput);
+      login({ token: data.token, user: data.user });
+      setVerifyDone(true);
+      setTimeout(() => navigate(from, { replace: true }), 1500);
+    } catch (err) {
+      setError(err.message || 'Invalid verification code.');
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    const targetEmail = pendingEmail || email.trim();
+    if (!targetEmail) return;
+    setResendLoading(true);
+    setError('');
+    try {
+      const data = await resendVerification(targetEmail);
+      applyVerificationData(data);
+      setSignupSuccess(true);
+      setPendingEmail(targetEmail);
+      if (data.verificationCode) setVerifyCodeInput(data.verificationCode);
+    } catch (err) {
+      setError(err.message || 'Could not resend verification email.');
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    login({ name: 'Demo User', email });
-    navigate(from, { replace: true });
+    setError('');
+    if (emailMode === 'signup' && !isStrongPassword(password)) {
+      setError(STRONG_PASSWORD_MSG);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      if (emailMode === 'signup') {
+        const data = await registerApi(name.trim(), email.trim(), password);
+        setPendingEmail(email.trim().toLowerCase());
+        setSignupSuccess(true);
+        applyVerificationData(data);
+        if (data.verificationCode) setVerifyCodeInput(data.verificationCode);
+        return;
+      }
+
+      const data = await loginApi(email.trim(), password);
+      login({ token: data.token, user: data.user });
+      navigate(from, { replace: true });
+    } catch (err) {
+      const msg = err.message || 'Something went wrong. Please try again.';
+      if (err.needsVerification || err.data?.needsVerification) {
+        setPendingEmail(email.trim().toLowerCase());
+        setSignupSuccess(true);
+        if (err.data?.verificationCode) {
+          setDisplayedCode(err.data.verificationCode);
+          setVerifyCodeInput(err.data.verificationCode);
+        }
+        setError('');
+        return;
+      }
+      if (emailMode === 'login' && msg.toLowerCase().includes('invalid email')) {
+        setError('No account found for this email. Create an account below.');
+      } else {
+        setError(msg);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const passwordChecks = emailMode === 'signup' ? getPasswordChecks(password) : [];
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    if (!credentialResponse?.credential) {
+      setError('Google sign-in was cancelled.');
+      return;
+    }
+    setError('');
+    setLoading(true);
+    try {
+      const data = await googleLoginApi(credentialResponse.credential);
+      login({ token: data.token, user: data.user });
+      navigate(from, { replace: true });
+    } catch (err) {
+      setError(err.message || 'Google sign-in failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendPhoneOtp = async () => {
+    if (phone.length !== 10) return;
+    setPhoneLoading(true);
+    setError('');
+    setOtpError(false);
+    try {
+      await sendPhoneOtp(phone);
+      setOtpSent(true);
+      setOtp(['', '', '', '', '', '']);
+      setTimeout(() => document.getElementById('otp-0')?.focus(), 100);
+    } catch (err) {
+      setError(err.message || 'Could not send OTP via SMS.');
+      setOtpSent(false);
+    } finally {
+      setPhoneLoading(false);
+    }
+  };
+
+  const handleVerifyPhoneOtp = async () => {
+    const code = otp.join('');
+    if (code.length !== 6) {
+      setError('Enter the 6-digit OTP from your SMS.');
+      setOtpError(true);
+      return;
+    }
+    setPhoneLoading(true);
+    setError('');
+    setOtpError(false);
+    try {
+      const data = await verifyPhoneOtp(phone, code);
+      login({ token: data.token, user: data.user });
+      navigate(from, { replace: true });
+    } catch (err) {
+      setError(err.message || 'Wrong OTP. Please try again.');
+      setOtpError(true);
+      setOtp(['', '', '', '', '', '']);
+      document.getElementById('otp-0')?.focus();
+    } finally {
+      setPhoneLoading(false);
+    }
   };
 
   const handleOtpChange = (val, idx) => {
     if (!/^\d?$/.test(val)) return;
+    setOtpError(false);
+    if (error && activeTab === 'otp') setError('');
     const next = [...otp];
     next[idx] = val;
     setOtp(next);
@@ -42,6 +270,18 @@ export default function LoginPage() {
     if (e.key === 'Backspace' && !otp[idx] && idx > 0) {
       document.getElementById(`otp-${idx - 1}`)?.focus();
     }
+  };
+
+  const handleOtpPaste = (e) => {
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (!pasted) return;
+    e.preventDefault();
+    setOtpError(false);
+    setError('');
+    const next = pasted.split('').concat(Array(6).fill('')).slice(0, 6);
+    setOtp(next);
+    const focusIdx = Math.min(pasted.length, 5);
+    document.getElementById(`otp-${focusIdx}`)?.focus();
   };
 
   const perks = [
@@ -184,10 +424,13 @@ export default function LoginPage() {
                 fontSize: '28px', fontWeight: '800', color: CHARCOAL,
                 marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '10px'
               }}>
-                Welcome back <FiSmile style={{ color: GOLD }} />
+                {emailMode === 'signup' ? 'Join RoopVibe' : 'Welcome back'}{' '}
+                <FiSmile style={{ color: GOLD }} />
               </h1>
               <p style={{ fontSize: '14px', color: '#888', fontWeight: '400' }}>
-                Login to continue shopping
+                {emailMode === 'signup'
+                  ? 'Create an account to start shopping'
+                  : 'Login to continue shopping'}
               </p>
             </div>
 
@@ -201,7 +444,7 @@ export default function LoginPage() {
             }}>
               {[['login', 'Email Login'], ['otp', 'OTP Login']].map(([val, label]) => (
                 <button key={val} className="tab-btn"
-                  onClick={() => { setActiveTab(val); setOtpSent(false); }}
+                  onClick={() => { setActiveTab(val); setOtpSent(false); setError(''); setOtpError(false); }}
                   style={{
                     flex: 1, padding: '10px', borderRadius: '8px', border: 'none',
                     cursor: 'pointer', fontSize: '13px', fontWeight: '600',
@@ -215,9 +458,127 @@ export default function LoginPage() {
               ))}
             </div>
 
+            {/* ── Signup success — verify email ── */}
+            {signupSuccess && (
+              <div style={{
+                padding: '24px',
+                borderRadius: '12px',
+                backgroundColor: verifyDone ? '#F0FDF4' : '#FFFBEB',
+                border: `1px solid ${verifyDone ? '#BBF7D0' : '#FDE68A'}`,
+                textAlign: 'center',
+                marginBottom: '20px',
+              }}>
+                {verifyDone ? (
+                  <>
+                    <FiCheckCircle size={40} color="#16A34A" style={{ marginBottom: '12px' }} />
+                    <h2 style={{ fontSize: '18px', fontWeight: '800', color: CHARCOAL }}>Email verified!</h2>
+                    <p style={{ fontSize: '14px', color: '#555', marginTop: '8px' }}>Redirecting...</p>
+                  </>
+                ) : (
+                  <>
+                    <FiMail size={36} color={GOLD_DARK} style={{ marginBottom: '12px' }} />
+                    <h2 style={{ fontSize: '18px', fontWeight: '800', color: CHARCOAL, marginBottom: '8px' }}>
+                      Verify your email
+                    </h2>
+                    <p style={{ fontSize: '14px', color: '#555', lineHeight: 1.6, marginBottom: '12px' }}>
+                      {displayedCode
+                        ? <>Enter the code below for <strong>{pendingEmail}</strong></>
+                        : <>We sent a code to <strong>{pendingEmail}</strong>. Check your inbox (and spam).</>}
+                    </p>
+                    {displayedCode && (
+                      <div style={{
+                        fontSize: '28px', fontWeight: '800', letterSpacing: '8px',
+                        color: GOLD_DARK, marginBottom: '16px', fontFamily: 'monospace',
+                      }}>
+                        {displayedCode}
+                      </div>
+                    )}
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      placeholder="6-digit code"
+                      value={verifyCodeInput}
+                      onChange={(e) => setVerifyCodeInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      style={{
+                        width: '100%', height: '48px', textAlign: 'center',
+                        fontSize: '22px', letterSpacing: '8px', fontWeight: '700',
+                        borderRadius: '10px', border: `1.5px solid ${GOLD}`,
+                        marginBottom: '12px', fontFamily: 'monospace',
+                      }}
+                    />
+                    <button type="button" disabled={verifyLoading || verifyCodeInput.length !== 6}
+                      onClick={handleVerifyCode}
+                      style={{
+                        width: '100%', padding: '12px', borderRadius: '10px', border: 'none',
+                        background: verifyCodeInput.length === 6 ? GOLD_DARK : '#E8E0D5',
+                        color: '#fff', fontWeight: '700', fontSize: '14px',
+                        cursor: verifyCodeInput.length === 6 ? 'pointer' : 'not-allowed',
+                        fontFamily: "'DM Sans', sans-serif", marginBottom: '10px',
+                      }}>
+                      {verifyLoading ? 'Verifying...' : 'VERIFY EMAIL'}
+                    </button>
+                    {verifyUrl && (
+                      <a href={verifyUrl} style={{
+                        display: 'block', fontSize: '12px', color: GOLD_DARK,
+                        marginBottom: '12px', wordBreak: 'break-all',
+                      }}>
+                        Or tap here to verify with link
+                      </a>
+                    )}
+                    {error && (
+                      <p style={{ fontSize: '13px', color: '#B91C1C', marginBottom: '10px' }}>{error}</p>
+                    )}
+                    <button type="button" disabled={resendLoading} onClick={handleResendVerification}
+                      style={{
+                        width: '100%', padding: '10px', borderRadius: '10px', border: `1.5px solid ${GOLD}`,
+                        background: '#fff', color: GOLD_DARK, fontWeight: '600', fontSize: '13px',
+                        cursor: resendLoading ? 'not-allowed' : 'pointer',
+                        fontFamily: "'DM Sans', sans-serif", marginBottom: '8px',
+                      }}>
+                      {resendLoading ? 'Sending...' : 'Resend code / email'}
+                    </button>
+                    <button type="button" onClick={() => {
+                      setSignupSuccess(false); setEmailMode('login'); setError('');
+                      setVerifyCodeInput(''); setDisplayedCode('');
+                    }}
+                      style={{
+                        background: 'none', border: 'none', color: GOLD_DARK, fontWeight: '600',
+                        fontSize: '13px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
+                      }}>
+                      Back to login
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
             {/* ── Email Login Form ── */}
-            {activeTab === 'login' && (
+            {activeTab === 'login' && !signupSuccess && (
               <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {error && (
+                  <div style={{
+                    padding: '12px 14px',
+                    borderRadius: '10px',
+                    backgroundColor: '#FEF2F2',
+                    border: '1px solid #FECACA',
+                    color: '#B91C1C',
+                    fontSize: '13px',
+                    fontWeight: '500',
+                  }}>
+                    {error}
+                  </div>
+                )}
+                {emailMode === 'signup' && (
+                  <div style={{ position: 'relative' }}>
+                    <FiUser style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: focusedInput === 'name' ? GOLD : '#bbb', transition: 'color 0.2s' }} />
+                    <input type="text" placeholder="Full name" required value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      onFocus={() => setFocusedInput('name')}
+                      onBlur={() => setFocusedInput(null)}
+                      style={inputStyle('name')} />
+                  </div>
+                )}
                 {/* Email */}
                 <div style={{ position: 'relative' }}>
                   <FiMail style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: focusedInput === 'email' ? GOLD : '#bbb', transition: 'color 0.2s' }} />
@@ -231,7 +592,10 @@ export default function LoginPage() {
                 {/* Password */}
                 <div style={{ position: 'relative' }}>
                   <FiLock style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: focusedInput === 'password' ? GOLD : '#bbb', transition: 'color 0.2s' }} />
-                  <input type={showPassword ? 'text' : 'password'} placeholder="Password" required value={password}
+                  <input type={showPassword ? 'text' : 'password'}
+                    placeholder={emailMode === 'signup' ? 'Create a strong password' : 'Password'}
+                    required minLength={emailMode === 'signup' ? 8 : 1}
+                    value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     onFocus={() => setFocusedInput('password')}
                     onBlur={() => setFocusedInput(null)}
@@ -242,34 +606,82 @@ export default function LoginPage() {
                   </button>
                 </div>
 
-                {/* Forgot */}
-                <div style={{ textAlign: 'right', marginTop: '-8px' }}>
-                  <span style={{ fontSize: '12px', color: GOLD_DARK, fontWeight: '600', cursor: 'pointer' }}>
-                    Forgot password?
-                  </span>
-                </div>
+                {emailMode === 'signup' && password && (
+                  <ul style={{ margin: '-4px 0 0', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    {passwordChecks.map((c) => (
+                      <li key={c.label} style={{
+                        fontSize: '12px',
+                        color: c.ok ? '#16A34A' : '#999',
+                        display: 'flex', alignItems: 'center', gap: '6px',
+                      }}>
+                        <span style={{ fontSize: '10px' }}>{c.ok ? '✓' : '○'}</span>
+                        {c.label}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {emailMode === 'login' && (
+                  <div style={{ textAlign: 'right', marginTop: '-8px' }}>
+                    <span style={{ fontSize: '12px', color: GOLD_DARK, fontWeight: '600', cursor: 'pointer' }}>
+                      Forgot password?
+                    </span>
+                  </div>
+                )}
 
                 {/* Submit */}
-                <button type="submit" className="submit-btn"
+                <button type="submit" className="submit-btn" disabled={loading}
                   style={{
                     width: '100%', padding: '14px',
-                    background: `linear-gradient(to right, ${GOLD_DARK}, ${GOLD}, ${GOLD_DARK})`,
-                    backgroundSize: '200% auto',
-                    color: '#fff', border: 'none', borderRadius: '10px',
-                    fontWeight: '700', fontSize: '14px', cursor: 'pointer',
+                    ...GRADIENT_BTN(!loading),
+                    color: loading ? '#aaa' : '#fff', border: 'none', borderRadius: '10px',
+                    fontWeight: '700', fontSize: '14px', cursor: loading ? 'not-allowed' : 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                     transition: 'all 0.3s ease', letterSpacing: '0.5px',
                     fontFamily: "'DM Sans', sans-serif",
-                    boxShadow: '0 4px 14px rgba(160,120,64,0.3)',
+                    boxShadow: loading ? 'none' : '0 4px 14px rgba(160,120,64,0.3)',
                   }}>
-                  LOGIN TO ROOPVIBE <FiArrowRight />
+                  {loading
+                    ? (emailMode === 'signup' ? 'CREATING ACCOUNT...' : 'LOGGING IN...')
+                    : (emailMode === 'signup'
+                      ? <>CREATE ACCOUNT <FiArrowRight /></>
+                      : <>LOGIN TO ROOPVIBE <FiArrowRight /></>)}
                 </button>
+
+                <p style={{ textAlign: 'center', fontSize: '13px', color: '#888', marginTop: '4px' }}>
+                  {emailMode === 'login' ? (
+                    <>
+                      New to RoopVibe?{' '}
+                      <button type="button" onClick={() => { setEmailMode('signup'); setError(''); setSignupSuccess(false); }}
+                        style={{ background: 'none', border: 'none', color: GOLD_DARK, fontWeight: '700', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontSize: '13px', padding: 0 }}>
+                        Create account
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      Already have an account?{' '}
+                      <button type="button" onClick={() => { setEmailMode('login'); setError(''); }}
+                        style={{ background: 'none', border: 'none', color: GOLD_DARK, fontWeight: '700', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontSize: '13px', padding: 0 }}>
+                        Login
+                      </button>
+                    </>
+                  )}
+                </p>
               </form>
             )}
 
             {/* ── OTP Login Form ── */}
             {activeTab === 'otp' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {error && activeTab === 'otp' && (
+                  <div style={{
+                    padding: '12px 14px', borderRadius: '10px',
+                    backgroundColor: '#FEF2F2', border: '1px solid #FECACA',
+                    color: '#B91C1C', fontSize: '13px', fontWeight: '500',
+                  }}>
+                    {error}
+                  </div>
+                )}
                 {!otpSent ? (
                   <>
                     <div style={{ position: 'relative' }}>
@@ -285,27 +697,25 @@ export default function LoginPage() {
                         onBlur={() => setFocusedInput(null)}
                         style={{ ...inputStyle('phone'),  paddingLeft: '110px',fontSize: '14px', }} />
                     </div>
-                    <button onClick={() => phone.length === 10 && setOtpSent(true)} className="submit-btn"
+                    <button type="button" onClick={handleSendPhoneOtp} disabled={phone.length !== 10 || phoneLoading} className="submit-btn"
                       style={{
                         width: '100%', padding: '14px',
-                        background: phone.length === 10
-                          ? `linear-gradient(to right, ${GOLD_DARK}, ${GOLD}, ${GOLD_DARK})`
-                          : '#E8E0D5',
-                        backgroundSize: '200% auto',
-                        color: phone.length === 10 ? '#fff' : '#aaa',
+                        ...GRADIENT_BTN(phone.length === 10 && !phoneLoading),
+                        color: phone.length === 10 && !phoneLoading ? '#fff' : '#aaa',
                         border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '14px',
-                        cursor: phone.length === 10 ? 'pointer' : 'not-allowed',
+                        cursor: phone.length === 10 && !phoneLoading ? 'pointer' : 'not-allowed',
                         transition: 'all 0.3s', fontFamily: "'DM Sans', sans-serif",
-                        boxShadow: phone.length === 10 ? '0 4px 14px rgba(160,120,64,0.3)' : 'none',
+                        boxShadow: phone.length === 10 && !phoneLoading ? '0 4px 14px rgba(160,120,64,0.3)' : 'none',
                       }}>
-                      SEND OTP
+                      {phoneLoading ? 'SENDING...' : 'SEND OTP'}
                     </button>
                   </>
                 ) : (
                   <>
                     <p style={{ fontSize: '13px', color: '#777', textAlign: 'center' }}>
-                      OTP sent to <strong style={{ color: CHARCOAL }}>+91 {phone}</strong>
-                      <span onClick={() => setOtpSent(false)}
+                      Enter the 6-digit OTP sent via SMS to{' '}
+                      <strong style={{ color: CHARCOAL }}>+91 {phone}</strong>
+                      <span onClick={() => { setOtpSent(false); setOtp(['', '', '', '', '', '']); setOtpError(false); setError(''); }}
                         style={{ color: GOLD_DARK, fontWeight: '600', cursor: 'pointer', marginLeft: '8px', fontSize: '12px' }}>
                         Change
                       </span>
@@ -318,81 +728,77 @@ export default function LoginPage() {
                           type="text" inputMode="numeric" maxLength={1} value={digit}
                           onChange={(e) => handleOtpChange(e.target.value, idx)}
                           onKeyDown={(e) => handleOtpKey(e, idx)}
+                          onPaste={idx === 0 ? handleOtpPaste : undefined}
                           style={{
                             width: '46px', height: '52px', textAlign: 'center',
                             fontSize: '20px', fontWeight: '700', color: CHARCOAL,
-                            border: `2px solid ${digit ? GOLD : '#E8E0D5'}`,
+                            border: `2px solid ${otpError ? '#DC2626' : digit ? GOLD : '#E8E0D5'}`,
                             borderRadius: '10px', outline: 'none',
-                            backgroundColor: digit ? GOLD_LIGHT : '#FAFAF8',
+                            backgroundColor: otpError ? '#FEF2F2' : digit ? GOLD_LIGHT : '#FAFAF8',
                             transition: 'all 0.15s', fontFamily: "'DM Sans', sans-serif",
                           }} />
                       ))}
                     </div>
 
-                    <button
-                      onClick={() => { login({ name: 'OTP User', email: `${phone}@phone.com` }); navigate(from, { replace: true }); }}
+                    <button type="button" onClick={handleVerifyPhoneOtp} disabled={phoneLoading}
                       className="submit-btn"
                       style={{
                         width: '100%', padding: '14px',
-                        background: `linear-gradient(to right, ${GOLD_DARK}, ${GOLD}, ${GOLD_DARK})`,
-                        backgroundSize: '200% auto',
+                        ...GRADIENT_BTN(!phoneLoading),
                         color: '#fff', border: 'none', borderRadius: '10px',
-                        fontWeight: '700', fontSize: '14px', cursor: 'pointer',
+                        fontWeight: '700', fontSize: '14px',
+                        cursor: phoneLoading ? 'not-allowed' : 'pointer',
                         transition: 'all 0.3s', fontFamily: "'DM Sans', sans-serif",
                         boxShadow: '0 4px 14px rgba(160,120,64,0.3)',
                       }}>
-                      VERIFY & LOGIN
+                      {phoneLoading ? 'VERIFYING...' : 'VERIFY & LOGIN'}
                     </button>
 
                     <p style={{ textAlign: 'center', fontSize: '12px', color: '#aaa' }}>
-                      Didn't receive?{' '}
-                      <span style={{ color: GOLD_DARK, fontWeight: '600', cursor: 'pointer' }}>Resend OTP</span>
+                      Didn&apos;t receive?{' '}
+                      <span onClick={handleSendPhoneOtp} style={{ color: GOLD_DARK, fontWeight: '600', cursor: 'pointer' }}>
+                        Resend OTP
+                      </span>
                     </p>
                   </>
                 )}
               </div>
             )}
 
-            {/* Divider */}
-            <div style={{ display: 'flex', alignItems: 'center', margin: '24px 0', gap: '14px' }}>
-              <div style={{ flex: 1, height: '1px', backgroundColor: '#E8E0D5' }} />
-              <span style={{ fontSize: '11px', color: '#bbb', fontWeight: '600', letterSpacing: '1px' }}>OR CONTINUE WITH</span>
-              <div style={{ flex: 1, height: '1px', backgroundColor: '#E8E0D5' }} />
-            </div>
+            {!signupSuccess && (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', margin: '24px 0', gap: '14px' }}>
+                  <div style={{ flex: 1, height: '1px', backgroundColor: '#E8E0D5' }} />
+                  <span style={{ fontSize: '11px', color: '#bbb', fontWeight: '600', letterSpacing: '1px' }}>OR CONTINUE WITH</span>
+                  <div style={{ flex: 1, height: '1px', backgroundColor: '#E8E0D5' }} />
+                </div>
 
-            {/* Social buttons */}
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button className="social-btn"
-                onClick={() => { login({ name: 'Google User', email: 'google@example.com' }); navigate(from, { replace: true }); }}
-                style={{
-                  flex: 1, padding: '12px', backgroundColor: '#fff', border: '1.5px solid #E8E0D5',
-                  borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', gap: '8px', fontSize: '13px', fontWeight: '600',
-                  color: CHARCOAL, transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif",
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                }}>
-                <svg width="18" height="18" viewBox="0 0 24 24">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                </svg>
-                Google
-              </button>
-              <button className="social-btn"
-                style={{
-                  flex: 1, padding: '12px', backgroundColor: '#fff', border: '1.5px solid #E8E0D5',
-                  borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', gap: '8px', fontSize: '13px', fontWeight: '600',
-                  color: CHARCOAL, transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif",
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="#1877F2">
-                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                </svg>
-                Facebook
-              </button>
-            </div>
+                <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+                  {GOOGLE_CLIENT_ID ? (
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={() => setError('Google sign-in failed. Try again.')}
+                      theme="outline"
+                      size="large"
+                      width="380"
+                      text="continue_with"
+                      shape="rectangular"
+                    />
+                  ) : (
+                    <button type="button" className="social-btn"
+                      onClick={() => setError('Google login: add VITE_GOOGLE_CLIENT_ID in frontend/.env and GOOGLE_CLIENT_ID in backend/.env')}
+                      style={{
+                        width: '100%', padding: '12px', backgroundColor: '#fff', border: '1.5px solid #E8E0D5',
+                        borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center',
+                        justifyContent: 'center', gap: '8px', fontSize: '13px', fontWeight: '600',
+                        color: CHARCOAL, fontFamily: "'DM Sans', sans-serif",
+                      }}>
+                      Google (not configured)
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
 
             
 
