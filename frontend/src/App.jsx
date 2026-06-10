@@ -7,7 +7,7 @@ import { CartProvider } from './context/CartContext'
 import { AuthProvider } from './context/AuthContext'
 import { LanguageProvider } from './context/LanguageContext'
 import { WishlistProvider } from './context/WishlistContext'
-
+import { AdminDataProvider } from './Admin/context/Admindatacontext'
 
 export default function App() {
   return (
@@ -15,14 +15,16 @@ export default function App() {
       <AuthProvider>
         <CartProvider>
           <WishlistProvider>
-            <Navbar />
-            <main>
-              <AppRoutes />
-            </main>
-            <MobileBottomNav />
+            {/* ✅ AdminDataProvider sabse upar — Navbar + Routes dono use kar sakte hain */}
+            <AdminDataProvider>
+              <Navbar />
+              <main>
+                <AppRoutes />
+              </main>
+              <MobileBottomNav />
+            </AdminDataProvider>
           </WishlistProvider>
         </CartProvider>
-
       </AuthProvider>
     </LanguageProvider>
   );

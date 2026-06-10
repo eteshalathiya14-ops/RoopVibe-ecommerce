@@ -1,304 +1,640 @@
+// frontend/src/pages/OffersPage.jsx
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { Link } from "react-router-dom";
+import { useCart } from "../context/CartContext";
+import { useWishlist } from "../context/WishlistContext";
+import {
+  FiHeart, FiZap, FiClock, FiTag, FiArrowRight,
+  FiChevronLeft, FiChevronRight, FiRefreshCw,
+  FiShoppingBag, FiCheck,
+} from "react-icons/fi";
+import { useMobileLayout } from "../hooks/Usemobilelayout";
+import { fetchAllOffers } from "../Api/Offersapi";
+import { useAdminData } from "../Admin/context/Admindatacontext";
 
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useCart } from '../context/CartContext';
-import { FiHeart, FiZap, FiClock, FiTag, FiArrowRight, FiPlus } from 'react-icons/fi';
-import { useMobileLayout } from '../hooks/Usemobilelayout';
+// ── RoopVibe Design Tokens ────────────────────────────────────
+const T = {
+  primary:     "#C9A96E",   // RoopVibe Gold
+  primaryDark: "#A07840",   // Gold Dark
+  primaryBg:   "#F5EDD9",   // Gold Light
+  gold:        "#C9A96E",
+  goldDark:    "#A07840",
+  goldBg:      "#FAF3E7",
+  green:       "#2E7D32",
+  greenBg:     "#E8F5E9",
+  red:         "#D32F2F",
+  redBg:       "#FFEBEE",
+  charcoal:    "#1A1A1A",
+  text:        "#2D2D2D",
+  muted:       "#757575",
+  light:       "#BDBDBD",
+  border:      "#EBEBEB",
+  surface:     "#FAF7F2",
+  white:       "#FFFFFF",
+};
 
-const GOLD       = '#C9A96E';
-const GOLD_DARK  = '#A07840';
-const CHARCOAL   = '#1A1A1A';
-const MUTED      = '#7A736B';
-const BORDER     = '#EDE8E0';
-const SURFACE    = '#FAF7F2';
-const GREEN      = '#2E7D32';
-
-/* ── Offer banners ─────────────────────────────── */
-const BANNERS = [
-  {
-    bg: 'linear-gradient(120deg,#7B1FA2,#AB47BC)',
-    title: 'MEGA SALE',
-    sub: 'Up to 85% Off',
-    tag: 'LIMITED TIME',
-    cta: 'Shop Now',
-    img: 'https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=200&h=140&fit=crop&crop=top',
-  },
-  {
-    bg: 'linear-gradient(120deg,#C62828,#EF5350)',
-    title: 'FLASH DEALS',
-    sub: 'Starting ₹199',
-    tag: 'TODAY ONLY',
-    cta: 'Grab Now',
-    img: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=200&h=140&fit=crop&crop=top',
-  },
-  {
-    bg: 'linear-gradient(120deg,#1565C0,#42A5F5)',
-    title: 'NEW ARRIVALS',
-    sub: 'Extra 10% Off',
-    tag: 'USE CODE: NEW10',
-    cta: 'Explore',
-    img: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=200&h=140&fit=crop&crop=top',
-  },
-];
-
-/* ── Coupons ───────────────────────────────────── */
-const COUPONS = [
-  { code: 'FIRST50',  title: 'First Order Discount', desc: '50% off on your first order above ₹499', color: '#7B1FA2' },
-  { code: 'SAVE200',  title: 'Flat ₹200 Off',        desc: 'On orders above ₹999. Valid today only',  color: '#C62828' },
-  { code: 'UPIOFF',   title: 'UPI Extra 5% Off',     desc: 'Pay via UPI and get 5% cashback',          color: '#1565C0' },
-  { code: 'SUMMER30', title: 'Summer Special',       desc: '30% off on all ethnic wear collections',   color: GOLD_DARK },
-];
-
-/* ── Category deals ────────────────────────────── */
-const CAT_DEALS = [
-  { label: 'Ethnic Wear',  disc: 'Up to 80%', img: 'https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=200&h=200&fit=crop&crop=top', path: '/category/women/ethnic-wear' },
-  { label: 'Western Wear', disc: 'Up to 70%', img: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=200&h=200&fit=crop&crop=top', path: '/category/women/western-wear' },
-  { label: 'Men Fashion',  disc: 'Up to 75%', img: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=200&h=200&fit=crop&crop=top', path: '/category/men/top-wear' },
-  { label: 'Footwear',     disc: 'Up to 65%', img: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=200&h=200&fit=crop',              path: '/category/women/footwear' },
-  { label: 'Jewellery',    disc: 'Up to 85%', img: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=200&h=200&fit=crop',            path: '/category/women/jewellery' },
-  { label: 'Kids',         disc: 'Up to 60%', img: 'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?w=200&h=200&fit=crop&crop=top',   path: '/category/kids/boys' },
-];
-
-/* ── Flash deal products ───────────────────────── */
-const DEALS = [
-  { id: 1,  title: 'Printed Anarkali Kurta',  price: 399,  mrp: 1299, img: 'https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=300&h=380&fit=crop&crop=top',  disc: 69 },
-  { id: 2,  title: 'Floral Maxi Dress',       price: 599,  mrp: 1999, img: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=300&h=380&fit=crop&crop=top',  disc: 70 },
-  { id: 3,  title: 'Silk Blend Saree',        price: 899,  mrp: 2999, img: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=300&h=380&fit=crop&crop=top',  disc: 70 },
-  { id: 4,  title: 'Co-Ord Ethnic Set',       price: 699,  mrp: 2499, img: 'https://images.unsplash.com/photo-1581044777550-4cfa60707c03?w=300&h=380&fit=crop&crop=top',  disc: 72 },
-  { id: 5,  title: 'Embroidered Kurti',       price: 449,  mrp: 1499, img: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=300&h=380&fit=crop&crop=top',  disc: 70 },
-  { id: 6,  title: 'Chikankari Kurta',        price: 799,  mrp: 2599, img: 'https://images.unsplash.com/photo-1617375407175-baa01a8d69f8?w=300&h=380&fit=crop&crop=top',  disc: 69 },
-  { id: 7,  title: 'Palazzo Kurta Set',       price: 549,  mrp: 1799, img: 'https://images.unsplash.com/photo-1584370848010-d7fe6bc767ec?w=300&h=380&fit=crop&crop=top',  disc: 69 },
-  { id: 8,  title: 'Georgette Anarkali',      price: 699,  mrp: 2199, img: 'https://images.unsplash.com/photo-1594938298603-c8148c4b4e83?w=300&h=380&fit=crop&crop=top',  disc: 68 },
-];
-
-/* ── Flash countdown (static display) ─────────── */
-function FlashTimer() {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-      <FiClock size={13} color={GOLD} />
-      <span style={{ fontSize: 11, fontWeight: 700, color: GOLD_DARK }}>Ends in</span>
-      {['05', '23', '41'].map((t, i) => (
-        <React.Fragment key={i}>
-          <span style={{ backgroundColor: CHARCOAL, color: '#fff', fontSize: 11, fontWeight: 800, padding: '2px 6px', borderRadius: 4 }}>{t}</span>
-          {i < 2 && <span style={{ fontSize: 11, fontWeight: 800, color: CHARCOAL }}>:</span>}
-        </React.Fragment>
-      ))}
-    </div>
-  );
+function resolveImg(img) {
+  if (!img) return "";
+  if (typeof img === "string") return img;
+  if (typeof img === "object") return img.src || img.url || "";
+  return "";
 }
 
-/* ── Deal card ─────────────────────────────────── */
-function DealCard({ product }) {
+// ── Deal Card ─────────────────────────────────────────────────
+function DealCard({ product, isMobile }) {
   const { addToCart } = useCart();
-  const [wish, setWish] = useState(false);
+  const { toggleWishlist, isLiked } = useWishlist();
+  const [added, setAdded] = useState(false);
 
-  return (
-    <div style={{ backgroundColor: '#fff', borderRadius: 8, overflow: 'hidden', border: `1px solid ${BORDER}`, display: 'flex', flexDirection: 'column' }}>
-      <Link to={`/product/${product.id}`} style={{ textDecoration: 'none', position: 'relative', display: 'block' }}>
-        <img
-          src={product.img}
-          alt={product.title}
-          style={{ width: '100%', height: 200, objectFit: 'cover', objectPosition: 'top', display: 'block' }}
-          onError={e => { e.target.style.backgroundColor = SURFACE; e.target.style.minHeight = '200px'; }}
-        />
-        <div style={{ position: 'absolute', top: 8, left: 8, backgroundColor: '#C62828', color: '#fff', fontSize: 10, fontWeight: 800, padding: '3px 7px', borderRadius: 4 }}>
-          {product.disc}% OFF
-        </div>
-        <button
-          onClick={e => { e.preventDefault(); e.stopPropagation(); setWish(w => !w); }}
-          style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(255,255,255,0.92)', border: 'none', borderRadius: '50%', width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: wish ? '#ff4d4f' : MUTED }}>
-          <FiHeart size={15} fill={wish ? 'currentColor' : 'none'} />
-        </button>
-      </Link>
-      <div style={{ padding: '8px 10px 10px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-        <p style={{ fontSize: 11, fontWeight: 600, color: CHARCOAL, lineHeight: 1.35, marginBottom: 4 }}>{product.title}</p>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-          <div>
-            <span style={{ fontSize: 13, fontWeight: 800, color: CHARCOAL }}>₹{product.price}</span>
-            <span style={{ fontSize: 10, color: MUTED, textDecoration: 'line-through', marginLeft: 4 }}>₹{product.mrp}</span>
-          </div>
-          <button
-            onClick={() => addToCart(product)}
-            style={{ backgroundColor: GOLD, border: 'none', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff', flexShrink: 0 }}>
-            <FiPlus size={14} />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+  const pid = product._id;
+  const liked = isLiked?.(pid);
 
-/* ════════════════════════════════════════════════
-   MAIN COMPONENT
-   ════════════════════════════════════════════════ */
-export default function OffersPage() {
-  useCart();
-  const [copiedCode, setCopiedCode] = useState('');
-  const { isMobile } = useMobileLayout();
+  const imgs = (product.colorVariants?.[0]?.images || []).map(resolveImg).filter(Boolean);
+  const thumb = product.img || product.image || imgs[0] || "";
+  const discPercentage = product.disc ?? (product.mrp > 0 ? Math.round((1 - product.price / product.mrp) * 100) : 0);
 
-
-  const copyCode = (code) => {
-    navigator.clipboard?.writeText(code).catch(() => {});
-    setCopiedCode(code);
-    setTimeout(() => setCopiedCode(''), 2000);
+  const handleAdd = e => {
+    e.preventDefault();
+    e.stopPropagation();
+    addToCart({ 
+      id: pid, 
+      title: product.title, 
+      price: product.price, 
+      mrp: product.mrp, 
+      img: thumb, 
+      quantity: 1 
+    });
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
   };
 
   return (
-      <div className="rv-offers-page" style={{ backgroundColor: SURFACE, minHeight: '100vh', paddingBottom: isMobile ? 86 : 40 }}>
+    <div style={{
+      background: T.white, borderRadius: 12,
+      border: `1px solid ${T.border}`,
+      overflow: "hidden", display: "flex", flexDirection: "column",
+      transition: "all 0.22s", cursor: "pointer",
+      boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+    }}
+      onMouseEnter={e => {
+        e.currentTarget.style.transform = "translateY(-4px)";
+        e.currentTarget.style.boxShadow = "0 10px 28px rgba(201,169,110,0.18)";
+        e.currentTarget.style.borderColor = T.primary;
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.transform = "none";
+        e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.06)";
+        e.currentTarget.style.borderColor = T.border;
+      }}>
 
-      {/* ── HEADER — mobile only ─────────────────── */}
-      {isMobile && (
-        <header style={{
-          backgroundColor: '#fff',
-          borderBottom: `1px solid ${BORDER}`,
-          padding: '0 16px',
-          height: 56,
-          display: 'flex',
-          alignItems: 'center',
-          position: 'sticky',
-          top: 0,
-          zIndex: 100,
-          gap: 12,
+      <Link to={`/product/${product._id}`} style={{ textDecoration: "none", position: "relative", display: "block" }}>
+        <img
+          src={thumb}
+          alt={product.title}
+          loading="lazy"
+          style={{ width: "100%", height: isMobile ? 185 : 215, objectFit: "cover", objectPosition: "top", display: "block" }}
+          onError={e => { e.target.src = "https://via.placeholder.com/300x380?text=RoopVibe"; }}
+        />
+
+        {/* Discount badge */}
+        <div style={{
+          position: "absolute", top: 8, left: 8,
+          background: T.primary, color: "#fff",
+          fontSize: 10, fontWeight: 800,
+          padding: "3px 9px", borderRadius: 6,
         }}>
-          <FiTag size={18} color={GOLD_DARK} />
-          <h1 style={{ fontSize: 16, fontWeight: 900, color: CHARCOAL, letterSpacing: '1px', fontFamily: 'Georgia, serif', flex: 1 }}>
-            OFFERS
-          </h1>
-        </header>
-      )}
-
-      {/* ── DESKTOP HEADING ─────────────────────── */}
-      {!isMobile && (
-        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 40px 0' }}>
-          <h1 style={{ fontSize: 26, fontWeight: 900, color: CHARCOAL, fontFamily: 'Georgia, serif', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <FiTag color={GOLD_DARK} /> Offers & Deals
-          </h1>
-          <p style={{ color: MUTED, fontSize: 13, marginTop: 4 }}>Best prices, exclusive coupons & flash sales</p>
+          {discPercentage}% OFF
         </div>
-      )}
 
-      <div style={{ maxWidth: isMobile ? '100%' : 1100, margin: '0 auto', padding: isMobile ? '14px 12px' : '20px 40px', display: 'flex', flexDirection: 'column', gap: 28 }}>
-
-        {/* ── PROMO BANNERS ─────────────────────── */}
-        <section>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {BANNERS.map((b, i) => (
-              <div key={i} style={{
-                borderRadius: 12,
-                overflow: 'hidden',
-                background: b.bg,
-                display: 'flex',
-                alignItems: 'center',
-                height: isMobile ? 110 : 130,
-                boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-                cursor: 'pointer',
-              }}>
-                <div style={{ padding: '16px 20px', flex: 1 }}>
-                  <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: '1.5px', color: 'rgba(255,255,255,0.85)', backgroundColor: 'rgba(255,255,255,0.15)', padding: '2px 8px', borderRadius: 20, display: 'inline-block', marginBottom: 6 }}>
-                    {b.tag}
-                  </span>
-                  <p style={{ fontSize: isMobile ? 22 : 26, fontWeight: 900, color: '#fff', lineHeight: 1.1, fontFamily: 'Georgia, serif', marginBottom: 4 }}>{b.title}</p>
-                  <p style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.9)', marginBottom: 10 }}>{b.sub}</p>
-                  <button style={{ backgroundColor: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.6)', color: '#fff', fontSize: 9, fontWeight: 800, padding: '5px 14px', borderRadius: 20, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                    {b.cta} <FiArrowRight size={10} />
-                  </button>
-                </div>
-                <div style={{ width: isMobile ? 110 : 160, height: '100%', flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
-                  <img
-                    src={b.img}
-                    alt={b.title}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block' }}
-                    onError={e => { e.target.style.display = 'none'; }}
-                  />
-                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(0,0,0,0.25), transparent)' }} />
-                </div>
-              </div>
-            ))}
+        {/* Special badge */}
+        {product.badge && (
+          <div style={{
+            position: "absolute", top: 8, right: 38,
+            background: T.gold, color: "#fff",
+            fontSize: 8, fontWeight: 800,
+            padding: "2px 7px", borderRadius: 4,
+          }}>
+            {product.badge}
           </div>
-        </section>
+        )}
 
-        {/* ── COUPON CODES ─────────────────────── */}
-        <section>
-          <h2 style={{ fontSize: 16, fontWeight: 800, color: CHARCOAL, marginBottom: 14, fontFamily: 'Georgia, serif', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <FiTag color={GOLD_DARK} /> Coupon Codes
-          </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
-            {COUPONS.map((c, i) => (
-              <div key={i} style={{
-                backgroundColor: '#fff',
-                borderRadius: 10,
-                border: `1px dashed ${c.color}55`,
-                padding: '12px 14px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-              }}>
-                <div style={{ width: 4, alignSelf: 'stretch', backgroundColor: c.color, borderRadius: 4, flexShrink: 0 }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 12, fontWeight: 800, color: CHARCOAL, marginBottom: 2 }}>{c.title}</p>
-                  <p style={{ fontSize: 10, color: MUTED, marginBottom: 8 }}>{c.desc}</p>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', backgroundColor: `${c.color}12`, border: `1.5px dashed ${c.color}`, borderRadius: 6, padding: '3px 10px' }}>
-                    <span style={{ fontSize: 12, fontWeight: 900, color: c.color, letterSpacing: '1.5px' }}>{c.code}</span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => copyCode(c.code)}
-                  style={{
-                    backgroundColor: copiedCode === c.code ? GREEN : c.color,
-                    color: '#fff', border: 'none', borderRadius: 6,
-                    padding: '8px 14px', fontSize: 10, fontWeight: 800,
-                    cursor: 'pointer', flexShrink: 0, letterSpacing: '0.5px',
-                    transition: 'background 0.2s', minWidth: 60,
-                  }}>
-                  {copiedCode === c.code ? '✓ Copied' : 'COPY'}
-                </button>
-              </div>
-            ))}
-          </div>
-        </section>
+        {/* Wishlist */}
+        <button
+          onClick={e => { e.preventDefault(); e.stopPropagation(); toggleWishlist({ ...product, id: pid }); }}
+          style={{
+            position: "absolute", top: 8, right: 8,
+            width: 32, height: 32, borderRadius: "50%",
+            background: "rgba(255,255,255,0.96)",
+            border: "none", display: "flex", alignItems: "center",
+            justifyContent: "center", cursor: "pointer",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+            transition: "transform 0.15s",
+          }}
+          onMouseEnter={e => e.currentTarget.style.transform = "scale(1.18)"}
+          onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+          aria-label={liked ? "Remove from wishlist" : "Add to wishlist"}>
+          <FiHeart size={14} fill={liked ? T.primary : "none"} color={liked ? T.primary : T.muted} />
+        </button>
+      </Link>
 
-        {/* ── SHOP BY CATEGORY ─────────────────── */}
-        <section>
-          <h2 style={{ fontSize: 16, fontWeight: 800, color: CHARCOAL, marginBottom: 14, fontFamily: 'Georgia, serif', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <FiZap color={GOLD_DARK} /> Shop by Category
-          </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3,1fr)' : 'repeat(6,1fr)', gap: 14 }}>
-            {CAT_DEALS.map((cat, i) => (
-              <Link key={i} to={cat.path} style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: '50%', overflow: 'hidden', border: `2px solid ${BORDER}`, position: 'relative', backgroundColor: SURFACE }}>
-                  <img
-                    src={cat.img}
-                    alt={cat.label}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block' }}
-                    onError={e => { e.target.style.display = 'none'; }}
-                  />
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.55)', padding: '4px 0', textAlign: 'center' }}>
-                    <span style={{ fontSize: 8, fontWeight: 800, color: '#fff' }}>{cat.disc}</span>
-                  </div>
-                </div>
-                <span style={{ fontSize: isMobile ? 9 : 11, fontWeight: 700, color: CHARCOAL, textAlign: 'center', lineHeight: 1.3 }}>{cat.label}</span>
-              </Link>
-            ))}
-          </div>
-        </section>
+      <div style={{ padding: "10px 12px 13px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+        <p style={{
+          fontSize: 12, fontWeight: 600, color: T.text,
+          lineHeight: 1.4, marginBottom: 8,
+          display: "-webkit-box", WebkitLineClamp: 2,
+          WebkitBoxOrient: "vertical", overflow: "hidden",
+        }}>
+          {product.title}
+        </p>
 
-        {/* ── FLASH DEALS ─────────────────────── */}
-        <section>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <h2 style={{ fontSize: 16, fontWeight: 800, color: CHARCOAL, fontFamily: 'Georgia, serif', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <FiZap size={16} color={GOLD_DARK} /> Flash Deals
-            </h2>
-            <FlashTimer />
+        <div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+            <div>
+              <span style={{ fontSize: 16, fontWeight: 900, color: T.charcoal }}>₹{product.price}</span>
+              <span style={{ fontSize: 10, color: T.light, textDecoration: "line-through", marginLeft: 6 }}>₹{product.mrp}</span>
+            </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: 12 }}>
-            {DEALS.map(product => (
-              <DealCard key={product.id} product={product} />
-            ))}
-          </div>
-        </section>
 
+          <button
+            onClick={handleAdd}
+            style={{
+              width: "100%", padding: isMobile ? "7px" : "9px",
+              background: added ? T.green : "#fff",
+              color: added ? "#fff" : T.primaryDark,
+              border: `1.5px solid ${added ? T.green : T.primary}`,
+              borderRadius: 8, fontSize: isMobile ? 10 : 11,
+              fontWeight: 700, cursor: "pointer", transition: "all 0.2s",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              gap: 5, marginTop: 10,
+            }}>
+            {added ? <><FiCheck size={12}/> Added!</> : <><FiShoppingBag size={12}/> Add to Cart</>}
+          </button>
+
+          <div style={{ background: T.greenBg, borderRadius: 5, padding: "3px 9px", display: "inline-block", marginTop: 8 }}>
+            <span style={{ fontSize: 10, color: T.green, fontWeight: 800 }}>
+              Save ₹{product.mrp - product.price}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
+  );
+}
+
+// ── Banner Carousel ───────────────────────────────────────────
+function BannerCarousel({ banners, isMobile }) {
+  const [active, setActive] = useState(0);
+  const intervalRef = useRef(null);
+
+  const startAutoPlay = useCallback(() => {
+    if (banners.length <= 1) return;
+    intervalRef.current = setInterval(() => {
+      setActive(p => (p + 1) % banners.length);
+    }, 4500);
+  }, [banners.length]);
+
+  useEffect(() => {
+    startAutoPlay();
+    return () => clearInterval(intervalRef.current);
+  }, [startAutoPlay]);
+
+  const goTo = idx => {
+    clearInterval(intervalRef.current);
+    setActive(idx);
+    startAutoPlay();
+  };
+
+  const prev = () => goTo((active - 1 + banners.length) % banners.length);
+  const next = () => goTo((active + 1) % banners.length);
+
+  if (!banners.length) return null;
+
+  return (
+    <section>
+      <div style={{
+        position: "relative", borderRadius: isMobile ? 12 : 18,
+        overflow: "hidden", height: isMobile ? 165 : 230,
+        boxShadow: "0 6px 28px rgba(0,0,0,0.16)",
+      }}>
+        {banners.map((b, i) => (
+          <div key={b._id} style={{
+            position: "absolute", inset: 0,
+            transition: "opacity 0.65s ease",
+            opacity: i === active ? 1 : 0,
+            pointerEvents: i === active ? "auto" : "none",
+            background: b.image ? `url(${b.image}) center/cover no-repeat` : b.gradient,
+          }}>
+            {/* Dark overlay for readability */}
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, rgba(0,0,0,0.48) 0%, rgba(0,0,0,0.18) 60%, transparent 100%)" }} />
+
+            <div style={{
+              position: "relative", zIndex: 1, height: "100%",
+              display: "flex", flexDirection: "column",
+              justifyContent: "center",
+              padding: isMobile ? "0 22px" : "0 48px",
+            }}>
+              {b.tag && (
+                <span style={{
+                  background: "rgba(255,255,255,0.15)",
+                  backdropFilter: "blur(4px)",
+                  border: "1px solid rgba(255,255,255,0.3)",
+                  color: "#fff", fontSize: 9, fontWeight: 800,
+                  padding: "3px 12px", borderRadius: 20,
+                  display: "inline-block", width: "fit-content",
+                  marginBottom: 10, letterSpacing: 1.2,
+                }}>
+                  {b.tag}
+                </span>
+              )}
+              <h2 style={{
+                fontFamily: "'Playfair Display', Georgia, serif",
+                fontSize: isMobile ? 28 : 40,
+                fontWeight: 900, color: "#fff",
+                lineHeight: 1.1, marginBottom: 6,
+                textShadow: "0 2px 8px rgba(0,0,0,0.3)",
+              }}>
+                {b.title}
+              </h2>
+              {b.subtitle && (
+                <p style={{
+                  fontSize: isMobile ? 13 : 16,
+                  fontWeight: 600, color: "rgba(255,255,255,0.92)",
+                  marginBottom: 18, textShadow: "0 1px 4px rgba(0,0,0,0.25)",
+                }}>
+                  {b.subtitle}
+                </p>
+              )}
+              <Link
+                to={b.ctaLink || "/"}
+                style={{
+                  background: T.primary,
+                  color: "#fff", borderRadius: 25,
+                  padding: isMobile ? "9px 22px" : "11px 28px",
+                  fontSize: isMobile ? 12 : 13,
+                  fontWeight: 800, display: "inline-flex",
+                  alignItems: "center", gap: 7,
+                  textDecoration: "none", width: "fit-content",
+                  boxShadow: "0 4px 16px rgba(201,169,110,0.35)",
+                  transition: "transform 0.15s",
+                }}
+                onMouseEnter={e => e.currentTarget.style.transform = "scale(1.04)"}
+                onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
+                {b.cta || "Shop Now"} <FiArrowRight size={13} />
+              </Link>
+            </div>
+          </div>
+        ))}
+
+        {/* Prev / Next arrows — desktop only */}
+        {banners.length > 1 && !isMobile && (
+          <>
+            <button
+              onClick={prev}
+              style={{
+                position: "absolute", left: 14, top: "50%",
+                transform: "translateY(-50%)", width: 38, height: 38,
+                borderRadius: "50%", background: "rgba(255,255,255,0.9)",
+                border: "none", cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                zIndex: 10, boxShadow: "0 2px 12px rgba(0,0,0,0.18)",
+                transition: "transform 0.15s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-50%) scale(1.1)"}
+              onMouseLeave={e => e.currentTarget.style.transform = "translateY(-50%) scale(1)"}>
+              <FiChevronLeft size={18} color={T.charcoal} />
+            </button>
+            <button
+              onClick={next}
+              style={{
+                position: "absolute", right: 14, top: "50%",
+                transform: "translateY(-50%)", width: 38, height: 38,
+                borderRadius: "50%", background: "rgba(255,255,255,0.9)",
+                border: "none", cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                zIndex: 10, boxShadow: "0 2px 12px rgba(0,0,0,0.18)",
+                transition: "transform 0.15s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-50%) scale(1.1)"}
+              onMouseLeave={e => e.currentTarget.style.transform = "translateY(-50%) scale(1)"}>
+              <FiChevronRight size={18} color={T.charcoal} />
+            </button>
+          </>
+        )}
+
+        {/* Dots */}
+        {banners.length > 1 && (
+          <div style={{
+            position: "absolute", bottom: 12, left: "50%",
+            transform: "translateX(-50%)",
+            display: "flex", gap: 6, zIndex: 10,
+          }}>
+            {banners.map((_, i) => (
+              <button
+                key={i} onClick={() => goTo(i)}
+                aria-label={`Go to banner ${i + 1}`}
+                style={{
+                  width: i === active ? 22 : 7, height: 7,
+                  borderRadius: 4,
+                  background: i === active ? T.primary : "rgba(255,255,255,0.55)",
+                  border: "none", cursor: "pointer",
+                  transition: "all 0.3s", padding: 0,
+                }} />
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+//  MAIN PAGE
+// ══════════════════════════════════════════════════════════════
+export default function OffersPage() {
+  const { isMobile } = useMobileLayout();
+  const { products, loading: adminLoading } = useAdminData();
+  const [data, setData]       = useState({ banners: [], coupons: [], categories: [] });
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState("");
+  const [copied, setCopied]   = useState("");
+
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const result = await fetchAllOffers();
+      setData({
+        banners:    Array.isArray(result?.banners)    ? result.banners    : [],
+        coupons:    Array.isArray(result?.coupons)    ? result.coupons    : [],
+        categories: Array.isArray(result?.categories) ? result.categories : [],
+      });
+    } catch (e) {
+      console.error("OffersPage:", e);
+      setError(e.message || "Could not load offers. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  const copyCode = code => {
+    navigator.clipboard?.writeText(code).catch(() => {});
+    setCopied(code);
+    setTimeout(() => setCopied(""), 2200);
+  };
+
+  const px = isMobile ? "12px" : "40px";
+  const mw = isMobile ? "100%" : "1100px";
+
+  // ── Loading ──────────────────────────────────────────────────
+  if (loading || adminLoading) return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh", gap: 14 }}>
+      <div style={{ width: 48, height: 48, border: `4px solid ${T.border}`, borderTopColor: T.primary, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+      <p style={{ color: T.muted, fontSize: 14, fontWeight: 600 }}>Loading offers...</p>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+
+  // ── Error ────────────────────────────────────────────────────
+  if (error) return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "50vh", gap: 16, padding: 24 }}>
+      <span style={{ fontSize: 44 }}>😕</span>
+      <p style={{ color: T.muted, fontSize: 14, fontWeight: 600, textAlign: "center" }}>{error}</p>
+      <button
+        onClick={loadData}
+        style={{ background: T.primary, color: "#fff", border: "none", borderRadius: 10, padding: "11px 28px", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
+        <FiRefreshCw size={14} /> Try Again
+      </button>
+    </div>
+  );
+
+  const activeBanners    = data.banners;
+  const activeCoupons    = data.coupons;
+  const activeCategories = data.categories;
+  
+  const dbFlashDeals = (products || []).filter(p => p.active && p.showOnHome).slice(0, 8);
+
+  return (
+    <>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg) } }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:translateY(0) } }
+        * { box-sizing: border-box; }
+      `}</style>
+
+      <div style={{ background: T.surface, minHeight: "100vh", paddingBottom: isMobile ? 90 : 60, fontFamily: "'Nunito','Segoe UI',sans-serif", animation: "fadeIn 0.3s ease" }}>
+
+        {/* ── Mobile sticky header ─────────────────────────── */}
+        {isMobile && (
+          <header style={{
+            background: T.white, borderBottom: `1px solid ${T.border}`,
+            padding: "0 16px", height: 54,
+            display: "flex", alignItems: "center", gap: 10,
+            position: "sticky", top: 0, zIndex: 100,
+            boxShadow: "0 1px 8px rgba(0,0,0,0.07)",
+          }}>
+            <FiTag size={18} color={T.primary} />
+            <h1 style={{ fontSize: 16, fontWeight: 900, color: T.charcoal }}>Offers &amp; Deals</h1>
+          </header>
+        )}
+
+        {/* ── Desktop heading ──────────────────────────────── */}
+        {!isMobile && (
+          <div style={{ maxWidth: mw, margin: "0 auto", padding: "28px 40px 0" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: T.primaryBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <FiTag size={18} color={T.primary} />
+              </div>
+              <h1 style={{ fontSize: 26, fontWeight: 900, color: T.charcoal }}>Offers &amp; Deals</h1>
+            </div>
+            <p style={{ color: T.muted, fontSize: 13, marginLeft: 46 }}>Best prices · exclusive coupons · flash sales</p>
+          </div>
+        )}
+
+        {/* ── Main content ─────────────────────────────────── */}
+        <div style={{ maxWidth: mw, margin: "0 auto", padding: `16px ${px} 0`, display: "flex", flexDirection: "column", gap: 32 }}>
+
+          {/* HERO BANNERS */}
+          {activeBanners.length > 0 && (
+            <BannerCarousel banners={activeBanners} isMobile={isMobile} />
+          )}
+
+          {/* COUPON CODES */}
+          {activeCoupons.length > 0 && (
+            <section>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                <div style={{ width: 30, height: 30, borderRadius: 8, background: T.primaryBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <FiTag size={15} color={T.primary} />
+                </div>
+                <h2 style={{ fontSize: isMobile ? 16 : 19, fontWeight: 900, color: T.charcoal }}>Coupon Codes</h2>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)", gap: 14 }}>
+                {activeCoupons.map(c => (
+                  <div key={c._id} style={{
+                    background: T.white, borderRadius: 14,
+                    border: `1px solid ${T.border}`,
+                    overflow: "hidden", display: "flex",
+                    boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+                    transition: "box-shadow 0.2s",
+                  }}
+                    onMouseEnter={e => e.currentTarget.style.boxShadow = "0 6px 22px rgba(0,0,0,0.1)"}
+                    onMouseLeave={e => e.currentTarget.style.boxShadow = "0 2px 10px rgba(0,0,0,0.05)"}>
+
+                    {/* Color strip */}
+                    <div style={{ width: 6, background: c.color || T.primary, flexShrink: 0 }} />
+
+                    <div style={{ padding: "14px 16px", flex: 1 }}>
+                      {/* Discount pill */}
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: `${c.color || T.primary}15`, border: `1px solid ${c.color || T.primary}40`, borderRadius: 6, padding: "3px 10px", marginBottom: 8 }}>
+                        <span style={{ fontSize: 13, fontWeight: 900, color: c.color || T.primary }}>
+                          {c.type === "flat" ? `₹${c.value} OFF` : `${c.value}% OFF`}
+                        </span>
+                      </div>
+
+                      <p style={{ fontSize: 13, fontWeight: 800, color: T.charcoal, marginBottom: 3 }}>{c.title}</p>
+                      {c.description && <p style={{ fontSize: 12, color: T.muted, marginBottom: 12, lineHeight: 1.45 }}>{c.description}</p>}
+
+                      {/* Code + copy button */}
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+                        <div style={{
+                          border: `1.5px dashed ${c.color || T.primary}`,
+                          borderRadius: 7, padding: "6px 14px",
+                          background: `${c.color || T.primary}10`,
+                        }}>
+                          <span style={{ fontSize: 14, fontWeight: 900, color: c.color || T.primary, letterSpacing: 1.8 }}>
+                            {c.code}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => copyCode(c.code)}
+                          style={{
+                            background: copied === c.code ? T.green : (c.color || T.primary),
+                            color: "#fff", border: "none",
+                            borderRadius: 9, padding: "9px 18px",
+                            fontSize: 12, fontWeight: 800,
+                            cursor: "pointer", transition: "all 0.2s",
+                            minWidth: 80,
+                            transform: copied === c.code ? "scale(1.05)" : "scale(1)",
+                          }}>
+                          {copied === c.code ? "✓ Copied!" : "COPY"}
+                        </button>
+                      </div>
+
+                      {/* Fine print */}
+                      {(c.minOrder > 0 || c.expiry) && (
+                        <p style={{ fontSize: 10, color: T.light, marginTop: 9, lineHeight: 1.4 }}>
+                          {c.minOrder > 0 && `Min order ₹${c.minOrder}`}
+                          {c.minOrder > 0 && c.expiry && " · "}
+                          {c.expiry && `Expires: ${c.expiry}`}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* SHOP BY CATEGORY */}
+          {activeCategories.length > 0 && (
+            <section>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 30, height: 30, borderRadius: 8, background: T.goldBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <FiZap size={15} color={T.gold} />
+                  </div>
+                  <h2 style={{ fontSize: isMobile ? 16 : 19, fontWeight: 900, color: T.charcoal }}>Shop by Category</h2>
+                </div>
+                
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : "repeat(6, 1fr)", gap: isMobile ? 12 : 18 }}>
+                {activeCategories.map(cat => (
+                  <Link key={cat._id} to={cat.link || "/"} style={{ textDecoration: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 7 }}>
+                    <div
+                      style={{
+                        width: "100%", aspectRatio: "1/1",
+                        borderRadius: "50%", overflow: "hidden",
+                        border: `2.5px solid ${T.border}`,
+                        position: "relative", background: T.surface,
+                        transition: "border-color 0.2s, box-shadow 0.2s, transform 0.2s",
+                        boxShadow: "0 2px 10px rgba(0,0,0,0.07)",
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.borderColor = T.primary;
+                        e.currentTarget.style.boxShadow = "0 6px 20px rgba(201,169,110,0.22)";
+                        e.currentTarget.style.transform = "scale(1.06)";
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.borderColor = T.border;
+                        e.currentTarget.style.boxShadow = "0 2px 10px rgba(0,0,0,0.07)";
+                        e.currentTarget.style.transform = "scale(1)";
+                      }}>
+                      {cat.image ? (
+                        <img
+                          src={cat.image} alt={cat.label}
+                          loading="lazy"
+                          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
+                          onError={e => { e.target.style.display = "none"; e.target.parentElement.innerHTML = `<div style="height:100%;display:flex;align-items:center;justify:center;font-size:20px;">👗</div>`; }}
+                        />
+                      ) : (
+                        <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: T.primaryBg }}>
+                          <FiTag size={24} color={T.primary} />
+                        </div>
+                      )}
+                      {/* Discount overlay */}
+                      <div style={{
+                        position: "absolute", bottom: 0, left: 0, right: 0,
+                        background: "linear-gradient(transparent, rgba(0,0,0,0.68))",
+                        padding: "14px 4px 5px", textAlign: "center",
+                      }}>
+                        <span style={{ fontSize: isMobile ? 8 : 9, fontWeight: 800, color: "#fff" }}>
+                          {cat.discount}
+                        </span>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: isMobile ? 10 : 12, fontWeight: 700, color: T.charcoal, textAlign: "center", lineHeight: 1.3 }}>
+                      {cat.label}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* FLASH DEALS */}
+          {dbFlashDeals.length > 0 && (
+            <section>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 30, height: 30, borderRadius: 8, background: "#FFEBEE", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <FiZap size={15} color={T.red} />
+                  </div>
+                  <h2 style={{ fontSize: isMobile ? 16 : 19, fontWeight: 900, color: T.red }}>Flash Deals</h2>
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: 14 }}>
+                {dbFlashDeals.map(p => (
+                  <DealCard key={p._id || p.id} product={p} isMobile={isMobile} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Empty state — no dynamic content at all */}
+          {!activeBanners.length && !activeCoupons.length && !activeCategories.length && !dbFlashDeals.length && (
+            <div style={{ textAlign: "center", padding: "60px 20px", color: T.muted }}>
+              <FiTag size={40} style={{ marginBottom: 12, opacity: 0.3 }} />
+              <p style={{ fontSize: 15, fontWeight: 700 }}>No active offers right now</p>
+              <p style={{ fontSize: 13, marginTop: 4 }}>Check back soon for exciting deals!</p>
+            </div>
+          )}
+
+        </div>
+      </div>
+    </>
   );
 }

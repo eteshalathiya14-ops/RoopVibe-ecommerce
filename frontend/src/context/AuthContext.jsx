@@ -41,13 +41,18 @@ export const AuthProvider = ({ children }) => {
         setIsLoggedIn(true);
       }
     } catch (e) {
-      // token invalid -> logout
-      localStorage.removeItem('roopvibe_token');
-      setIsLoggedIn(false);
-      setUser(null);
+      // ✅ FIXED: Sirf 401 (token expired/invalid) pe logout karo
+      // Network error, 404, 500 pe logout NAHI karo — user logged in rahega
+      if (e.status === 401) {
+        localStorage.removeItem('roopvibe_token');
+        localStorage.removeItem('roopvibe_auth');
+        localStorage.removeItem('roopvibe_user');
+        setIsLoggedIn(false);
+        setUser(null);
+      }
+      // Koi bhi aur error ho (network down, server error) — ignore karo
     }
   };
-
 
   const logout = () => {
     setIsLoggedIn(false);
@@ -68,4 +73,3 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-

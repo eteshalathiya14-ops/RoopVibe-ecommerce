@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { GoogleLogin } from '@react-oauth/google';
+import { adminLogin as adminLoginApi } from '../Api/Adminapi'; 
 import {
   login as loginApi,
   register as registerApi,
@@ -39,6 +40,8 @@ const GOLD_LIGHT = '#F5EDD9';
 const CHARCOAL = '#1A1A1A';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'admin@roopvibe.app';
+
 
 const GRADIENT_BTN = (enabled) => ({
   backgroundImage: enabled
@@ -151,6 +154,20 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+      if (emailMode === 'login' && email.trim().toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+    setLoading(true);
+    try {
+      const data = await adminLoginApi(email.trim(), password);
+      localStorage.setItem('roopvibe_admin_token', data.token);
+      navigate('/admin', { replace: true });
+      return;
+    } catch (err) {
+      setError(err.message || 'Invalid credentials.');
+      setLoading(false);
+      return;
+    }
+  }
+
     if (emailMode === 'signup' && !isStrongPassword(password)) {
       setError(STRONG_PASSWORD_MSG);
       return;

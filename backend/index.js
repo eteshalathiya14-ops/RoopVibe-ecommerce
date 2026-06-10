@@ -9,6 +9,14 @@ const navbarRoutes = require("./routes/navbarroutes");
 const homeRoutes   = require("./routes/home.routes");
 const authRoutes   = require("./routes/auth.routes");
 const filterRoutes = require("./routes/categoryfilter.routes"); 
+const offersRoutes = require("./routes/offers.routes");
+const addressroutes = require("./routes/address.routes")
+const orderRoutes = require("./routes/order.routes");
+const adminAuthRoutes = require("./routes/admin.auth.routes");
+const supportRoutes = require("./routes/support.routes");
+const cartRoutes = require("./routes/cart.routes");
+const wishlistRoutes = require("./routes/wishlist.routes");
+const ReviewRoutes = require("./routes/review.routes");
 
 const app = express();
 
@@ -22,7 +30,17 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use("/api/navbar",            navbarRoutes);
 app.use("/api/home",              homeRoutes);
 app.use("/api/auth",              authRoutes);
-app.use("/api/category-filters",  filterRoutes); // ← ADD THIS
+app.use("/api/category-filters",  filterRoutes); 
+app.use("/api/offers",            offersRoutes);
+app.use("/api/address",           addressroutes);
+app.use("/api/orders",            orderRoutes);
+app.use("/api/admin",             adminAuthRoutes);
+app.use("/api/support",          supportRoutes);
+app.use("/api/cart",             cartRoutes);
+app.use("/api/wishlist",         wishlistRoutes);
+app.use("/api/reviews",          ReviewRoutes);
+
+
 
 app.get("/", (req, res) => res.json({ ok: true }));
 

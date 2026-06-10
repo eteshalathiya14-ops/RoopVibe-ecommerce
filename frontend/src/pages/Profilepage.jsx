@@ -5,7 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 import {
   FiUser, FiPackage, FiRefreshCw,
   FiHeadphones, FiHelpCircle, FiLogOut, FiLogIn,
-  FiChevronRight, FiGlobe, FiShield, FiEdit2, FiHeart,
+  FiChevronRight, FiGlobe, FiShield, FiHeart,
 } from 'react-icons/fi';
 
 const GOLD      = '#C9A96E';
@@ -40,7 +40,6 @@ export default function ProfilePage() {
 
   const accountLinks = [
     { icon: <FiPackage size={18} />,    label: 'My Orders',           to: '/orders' },
-    { icon: <FiRefreshCw size={18} />,  label: 'Return & Replacement', to: '/returns' },
   ];
   const supportLinks = [
     { icon: <FiHeadphones size={18} />, label: 'Customer Support', to: '/support' },
@@ -93,6 +92,17 @@ export default function ProfilePage() {
 
   const hero = (
     <div style={{ background:`linear-gradient(145deg,${CHARCOAL} 0%,#2C2416 60%,#3D2E10 100%)`, padding: isMobile ? '28px 20px 36px' : '40px 40px 48px', position:'relative', overflow:'hidden' }}>
+      <button onClick={() => navigate('/')}
+      style={{
+        background: 'none', border: 'none',
+        color: 'rgba(255,255,255,0.5)', cursor: 'pointer',
+        fontSize: 13, fontWeight: 600,
+        display: 'flex', alignItems: 'center', gap: 6,
+        marginBottom: 16, padding: 0, fontFamily: 'inherit',
+      }}
+    >
+      ← Back
+    </button>
       <div style={{ position:'absolute', top:-40, right:-40, width:160, height:160, borderRadius:'50%', border:'1px solid rgba(201,169,110,0.15)', pointerEvents:'none' }} />
       <div style={{ position:'absolute', bottom:-60, left:-30, width:200, height:200, borderRadius:'50%', background:'radial-gradient(circle,rgba(201,169,110,0.08) 0%,transparent 70%)', pointerEvents:'none' }} />
 
@@ -108,9 +118,7 @@ export default function ProfilePage() {
             <h2 style={{ fontSize:20, fontWeight:800, color:'#fff', fontFamily:"'Playfair Display', serif", marginBottom:2 }}>{user?.name || 'User'}</h2>
             <p style={{ fontSize:12, color:'rgba(255,255,255,0.5)' }}>{user?.email}</p>
           </div>
-          <button style={{ background:'none', border:'1px solid rgba(201,169,110,0.3)', borderRadius:8, padding:8, cursor:'pointer', color:GOLD }}>
-            <FiEdit2 size={14} />
-          </button>
+         
         </div>
       ) : (
         <div style={{ position:'relative', maxWidth: isMobile ? '100%' : 500 }}>

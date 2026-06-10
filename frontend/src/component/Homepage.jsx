@@ -360,11 +360,7 @@ function ProductCard({ product, isMobile }) {
           )}
         </div>
 
-        {/* Free delivery tag (Meesho style) */}
-        <p style={{ fontSize: isMobile ? 9 : 10, color: GREEN, fontWeight: 600, marginBottom: 8 }}>
-          Free Delivery
-        </p>
-
+        
         {/* Add to cart button */}
         <button onClick={handleCart}
           style={{ width: "100%", padding: isMobile ? "7px" : "9px", background: added ? GREEN : "#fff", color: added ? "#fff" : GOLD_DARK, border: `1.5px solid ${added ? GREEN : GOLD}`, borderRadius: 6, fontSize: isMobile ? 10 : 11, fontWeight: 700, cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, marginTop: "auto" }}>

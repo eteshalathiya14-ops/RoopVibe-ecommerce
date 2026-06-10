@@ -13,40 +13,39 @@ import MobileCategoryIndex from '../pages/MobileCategoryIndex.jsx';
 import WishlistPage from '../pages/WishlistPage.jsx';
 import ProfilePage from '../pages/Profilepage.jsx';
 import MyOrdersPage from '../pages/Myorder.jsx';
-import ReturnReplacementPage from '../pages/Returnreplacementpage.jsx';
 import CustomerSupportPage from '../pages/Customersupportpage.jsx';
 import FAQPage from '../pages/Faqpage.jsx';
 import PrivacyPolicyPage from '../pages/Privacypolicypage.jsx';
 import AdminPanel from '../Admin/Adminpanel.jsx';
-import { AdminDataProvider } from '../Admin/context/Admindatacontext.jsx';
+import ProtectedAdminRoute from './ProtectedAdminRoute.jsx';
 
 export default function AppRoutes() {
   return (
-    <AdminDataProvider>
-      <Routes>
-        <Route path="/"                              element={<HomePage />} />
-
-        <Route path="/category/:gender/:subcategory" element={<CategoryPage />} />
-        <Route path="/categories"                    element={<MobileCategoryIndex />} />
-        <Route path="/search"                        element={<SearchPage />} />
-        <Route path="/cart"                          element={<CartPage />} />
-        <Route path="/login"                         element={<LoginPage />} />
-        <Route path="/profile"                       element={<ProfilePage />} />
-        <Route path="/orders"                        element={<MyOrdersPage />} />
-        <Route path="/returns"                       element={<ReturnReplacementPage />} />
-        <Route path="/support"                       element={<CustomerSupportPage />} />
-        <Route path="/faq"                           element={<FAQPage />} />
-        <Route path="/privacy"                       element={<PrivacyPolicyPage />} />
-        <Route path="/checkout"                      element={<AddressPage />} />
-        <Route path="/product/:id"                   element={<ProductDetailPage />} />
-        <Route path="/offers"                        element={<OffersPage />} />
-        <Route path="/wishlist"                      element={<WishlistPage />} />
-
-        {/* Admin routes */}
-        <Route path="/admin/*"                       element={<AdminPanel />} />
-
-        <Route path="*"                              element={<NotFoundPage navLinks={navLinks} />} />
-      </Routes>
-    </AdminDataProvider>
+    <Routes>
+      <Route path="/"                              element={<HomePage />} />
+      <Route path="/category/:gender/:subcategory" element={<CategoryPage />} />
+      <Route path="/categories"                    element={<MobileCategoryIndex />} />
+      <Route path="/search"                        element={<SearchPage />} />
+      <Route path="/cart"                          element={<CartPage />} />
+      <Route path="/login"                         element={<LoginPage />} />
+      <Route path="/profile"                       element={<ProfilePage />} />
+      <Route path="/orders"                        element={<MyOrdersPage />} />
+      <Route path="/support"                       element={<CustomerSupportPage />} />
+      <Route path="/faq"                           element={<FAQPage />} />
+      <Route path="/privacy"                       element={<PrivacyPolicyPage />} />
+      <Route path="/checkout"                      element={<AddressPage />} />
+      <Route path="/product/:id"                   element={<ProductDetailPage />} />
+      <Route path="/offers"                        element={<OffersPage />} />
+      <Route path="/wishlist"                      element={<WishlistPage />} />
+      <Route
+        path="/admin/*"
+        element={
+          <ProtectedAdminRoute>
+            <AdminPanel />
+          </ProtectedAdminRoute>
+        }
+      />      
+      <Route path="*"                              element={<NotFoundPage navLinks={navLinks} />} />
+    </Routes>
   );
 }

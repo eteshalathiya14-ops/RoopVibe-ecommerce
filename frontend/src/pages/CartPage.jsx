@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 
 import { FiMinus, FiPlus, FiX, FiShoppingBag } from 'react-icons/fi';
@@ -9,7 +9,11 @@ const MUTED = "#6B6560";
 const BORDER = "#EDE8E0";
 
 export default function CartPage() {
+  const navigate = useNavigate();
   const { cartItems, removeFromCart, updateQuantity, cartTotal, cartCount } = useCart();
+
+  const totalMRP = cartItems.reduce((acc, item) => acc + (item.mrp * item.quantity), 0);
+  const totalDiscount = totalMRP - cartTotal;
 
   if (cartItems.length === 0) {
     return (
@@ -26,6 +30,19 @@ export default function CartPage() {
 
   return (
     <div className="rv-cart-container" style={{ maxWidth: '1000px', margin: '40px auto', padding: '0 24px' }}>
+      <button
+        onClick={() => navigate("/")}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          background: 'none', border: 'none',
+          color: MUTED, cursor: 'pointer',
+          fontSize: 13, fontWeight: 600,
+          marginBottom: 16, padding: 0,
+          fontFamily: 'inherit',
+        }}
+      >
+        ← Back
+      </button>
       <h1 className="rv-cart-title" style={{ fontSize: '28px', color: CHARCOAL, marginBottom: '32px', fontFamily: 'Georgia, serif' }}>Your Shopping Bag ({cartCount})</h1>
 
       <div className="rv-cart-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '40px' }}>
@@ -69,12 +86,21 @@ export default function CartPage() {
             <span style={{ color: MUTED }}>Total items</span>
             <span>{cartCount}</span>
           </div>
+          {totalDiscount > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px' }}>
+              <span style={{ color: MUTED }}>Total Discount</span>
+              <span style={{ color: "#2E7D32", fontWeight: "600" }}>-₹{totalDiscount}</span>
+            </div>
+          )}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px', fontSize: '18px', fontWeight: 'bold' }}>
             <span>Total Amount</span>
             <span>₹{cartTotal}</span>
           </div>
-          <button style={{ width: '100%', padding: '14px', backgroundColor: GOLD, color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>
-            Checkout Now
+          <button 
+            onClick={() => navigate('/checkout')}
+            style={{ width: '100%', padding: '14px', backgroundColor: GOLD, color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}
+          >
+            Continue
           </button>
           <p style={{ marginTop: '16px', fontSize: '12px', color: MUTED, textAlign: 'center' }}>
             Safe and Secure Payments. 100% Authentic products.

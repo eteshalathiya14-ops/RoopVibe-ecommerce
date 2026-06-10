@@ -796,11 +796,11 @@ export default function ProductAdmin() {
                   </div>
                 </div>
               }
-              right={<>
+              right={<div style={{ display: "flex", gap: 8 }}>
                 <Toggle value={p.active} onChange={v => updateProduct({ ...p, active: v })} />
                 <Btn size="sm" onClick={() => openEdit(p)}><FiEdit2 size={13} /></Btn>
                 <Btn size="sm" variant="danger" onClick={() => remove(p.id)}><FiTrash2 size={13} /></Btn>
-              </>}
+              </div>}
             />
           );
         })}
